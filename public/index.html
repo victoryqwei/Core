@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="description" content="Protect your core against other players with this interactive multiplayer game.">
+		<meta name="keywords" content="game, 2d, interactive, multiplayer, io, fun, protect, core">
+		<link rel="stylesheet" taype="terext/css" href="stylesheets/style.css">
+		<title>Core</title>
+		<link rel="icon" href="./images/tile/corelevel1.png">
+		<script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+		<script>
+		  (adsbygoogle = window.adsbygoogle || []).push({
+		    google_ad_client: "ca-pub-8442333001235986",
+		    enable_page_level_ads: true
+		  });
+		</script>
+	</head>
+	<body style="overflow: hidden;">
+
+	<canvas id="canvas">
+</canvas>
+<div id="wrapfabtest">
+    <div class="adBanner">
+    </div>
+</div>
+<div style="width: 100%; height: 10px; position: absolute; top: 50%; display: none;" id="uiSlider">
+	<div class="slidecontainer" style="position: relative; margin-right:auto; margin-left: auto; float: center; width: 200px;">
+	  <input type="range" min="1" max="100" value="50" class="slider" id="UIscale" style="position: relative; float: center; width: 200px;">
+	   <input type="checkbox" id="advancedOptions" value="options">Advanced View
+	</div>
+</div>
+<div id="playerClass" style="width: 100%; height:60%; top:28%; position: absolute; float: center; display: none;">
+	<div style="position: relative; float: center; margin-right:auto; margin-left: auto; width: 55%; height: 100%;">
+		<div style="background-color: rgba(0,0,0,0.2); position: absolute; width: 24%; text-align: center; border-radius: 5px; height: 350px; display: inline-block;" id="Soldier">	
+		<p style="font-size: 30px;">Soldier</p>
+		<p>Shooting Speed: 300M/S</p>
+		<p>Damage: 10H/P</p>
+		<p>Speed: 30KM/H</p>
+		<p>Bullet Size: 50CM</p>
+		<p>Health: 50H/P</p>
+		</div>
+		<div style="background-color: rgba(0,0,0,0.2); position: absolute; left: 25%; width: 24%; text-align: center; border-radius: 5px; height: 350px; display: inline-block;" id="Sniper">
+		<p style="font-size: 30px;">Sniper</p>
+		<p>Shooting Speed: 1000M/S</p>
+		<p>Damage: 25H/P</p>
+		<p>Speed: 20KM/H</p>
+		<p>Bullet Size: 20CM</p>
+		<p>Health: 50H/P</p>
+		</div>
+		<div style="background-color: rgba(0,0,0,0.2); position: absolute; left: 50%; width: 24%; text-align: center; border-radius: 5px; height: 350px; display: inline-block;" id="Heavy">
+		<p style="font-size: 30px;">Heavy</p>
+		<p>Shooting Speed: 30M/S</p>
+		<p>Damage: 3H/P</p>
+		<p>Speed: 20KM/H</p>
+		<p>Bullet Size: 30CM</p>
+		<p>Health: 50H/P</p>
+		</div>
+		<div style="background-color: rgba(0,0,0,0.2); position: absolute; left: 75%; width: 24%; text-align: center; border-radius: 5px; height: 350px; display: inline-block;" id="Cannoneer">
+		<p style="font-size: 30px;">Cannoneer</p>
+		<p>Shooting Speed: 600M/S</p>
+		<p>Damage: 10H/P</p>
+		<p>Speed: 20KM/H</p>
+		<p>Bullet Size: 60CM</p>
+		<p>Health: 80H/P</p>
+		<p>Explosion Damage: 5H/P</p>
+		</div>
+	</div>
+</div>
+<div id="title" style="width: 100%; height:60%; top:28%; position: absolute; float: center;">
+	<div style="position: relative; float: center; margin-right:auto; margin-left: auto; width: 70%; height: 100%;">
+		<div style="background-color: rgba(0,0,0,0.2); position: absolute; width: 24%; text-align: center; border-radius: 5px; height: 350px; display: inline-block;">	
+			<div style=" word-wrap: break-word; width: 93%; height: 95%; position: absolute; margin-right:auto; margin-left:auto; font-size: 15px; left: 5%; overflow-y: auto; overflow-x: hidden; top: 3%;">
+				<p style="font-size: 30px;">Changelog</p>
+				<p>You can upgrade walls by clicking on them while in build mode</p>
+				<p>Walls and core cannot be placed outside of map</p>
+				<p>Shooting from barrel instead of center of player</p>
+				<p>Fixed issue if player tabs out of window the player stops sending and receiving data</p>
+				<p>Added input element to receive name instead of using prompt</p>
+				<p>Players are automatically disconnected if they do not send data for more than 3 seconds</p>
+				<p>Added lightning effect to level 3 cores/p>
+				<p>Added level tier walls (1-4)</p>
+				<p>Fixed the bug where players could move after the spectating player left</p>
+			</div>
+		</div>
+		<div style="background-color: rgba(0,0,0,0.2); position: absolute; left: 25%; width: 49%; text-align: center; border-radius: 5px; height: 350px; display: inline-block;">
+			<div style="position: relative; top: 3%; float: center;">
+				<h1 class="title" style="font-size: 80px; position: relative; float: top; display: inline-block;" id="title">CORE</h1>
+				<p class="title" style="font-size: 30px; position: relative; float: top; display: inline-block;" id="title">v1.10</p>
+			</div>
+			<br/>
+			<div style="position: relative; bottom: 15%; float: center;">
+				<input id="name" type="text" style="width: 80%; height: 43px; font-size: 33.37px; opacity: 1; text-align: center; display: inline-block;" maxlength="30">
+				<input id="color" type="color" style="width: 35px; height: 43px; font-size: 33.37px; opacity: 1; text-align: center; display: inline-block; position: relative; top: 5px;"/>
+				<br/>
+				<br/>
+				<div style="float: center; position: relative;">
+					<a id="begin" class="beginButton" style="background-color: black; position: relative;">Begin</a>
+					<a id="spec" class="beginButton" style="background-color: black; position: relative; padding:10px 37px;">Spectate</a>
+				</div>
+				<br />
+				<br/>
+				<br/>
+				<a style="float: center; position: relative; color: black; font-size: 15px;" href="https://discord.gg/4SBUCtG">Join the discord: https://discord.gg/4SBUCtG</a>
+			</div>
+		</div>
+		<div style="background-color: rgba(0,0,0,0.2); position: absolute; width: 24%; left: 75%; text-align: center; border-radius: 5px; height: 350px; display: inline-block;">	
+			<div style=" word-wrap: break-word; width: 93%; height: 95%; position: absolute; margin-right:auto; margin-left:auto; font-size: 15px; left: 5%; overflow-y: auto; overflow-x: hidden; top: 3%;">
+				<p style="font-size: 30px; top: 3%;">Instructions</p>
+				<p>Press any key on your hotbar to activate place mode, press space to place it.</p>
+				<p>Your core is the only way to respawn so protect it with walls, place it by pressing 9 to activate place mode, and then press space.</p>
+				<p>Become the top of the leaderboard by collecting the most power, each level of core increses core power per second. Press E to activate the core UI.</p>
+			</div>	
+		</div>
+	</div>
+</div>
+<audio id="myAudio" controls autoplay style="display: none">
+  <source src="music/main.mp3" type="audio/mp3">
+</audio>
+<script type="text/javascript" src="javascripts/socket.io.js"></script>
+<script type="text/javascript" src="javascripts/events.js"></script>
+<script type="text/javascript" src="javascripts/jquery.js"></script>
+<script type="text/javascript" src="javascripts/vector.js"></script>
+<script type="text/javascript" src="javascripts/images.js"></script>
+<script type="text/javascript" src="javascripts/core.js"></script>
+<script type="text/javascript" src="javascripts/bullet.js"></script>
+<script type="text/javascript" src="javascripts/player.js"></script>
+<script type="text/javascript" src="javascripts/interface.js"></script>
+<script type="text/javascript" src="javascripts/tile.js"></script>
+<script type="text/javascript" src="javascripts/cookie.js"></script>
+<script type="text/javascript" src="javascripts/bot.js"></script>
+<script type="text/javascript" src="javascripts/ability.js"></script>
+<script type="text/javascript" src="javascripts/tower.js"></script>
+<script type="text/javascript" src="javascripts/module.js"></script>
+<script type="text/javascript" src="javascripts/input.js"></script>
+<script type="text/javascript" src="javascripts/class.js"></script>
+<script>
+
+	// Other players in lobby
+	var playerBuffers = [];
+
+	// Color var
+	var hexColor = $("#color").val();
+	var color = hexToRgb($("#color").val());
+
+	// Color for random RGB value
+	function getRandomRgb() {
+	  var num = Math.round(0xffffff * Math.random());
+	  var r = num >> 16;
+	  var g = num >> 8 & 255;
+	  var b = num & 255;
+	  return 'rgb(' + r + ', ' + g + ', ' + b + ')';
+	}
+
+	// Create an RGB value from he value
+	function hexToRgb(hex) {
+	    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+	    return result ? {
+	        r: parseInt(result[1], 16),
+	        g: parseInt(result[2], 16),
+	        b: parseInt(result[3], 16)
+	    } : null;
+	}
+
+	// Save color to cookie if there is no color saved
+	if(getCookie('userColor') != "") {
+		$("#color").val(JSON.parse(getCookie('userColor')));
+	} else {
+		$("#color").val('#'+(Math.random()*0xFFFFFF<<0).toString(16))
+	}	
+
+	// If name is empty change value of nametag to cookie value
+	if(getCookie('userName') != "") {
+	var nameBox = document.getElementById("name");
+	nameBox.value = JSON.parse(getCookie('userName'))
+	}
+	
+	// Set variables
+	var killText = false;
+	var killName = 'Player';
+	var increaseText = false;
+	var increase = undefined;
+	var finalKill = false; 
+	var alertText = false;
+	var chatList = [];
+	var previewUI = false;
+	var play = 0;
+
+	// Arena size
+	var arenaSize = 2000;
+
+	// Advanced options (fps, latency, coordinates)
+	var advancedOptions = false;
+
+	// Core cooldown
+	var cooldownRemain = 0;
+	var ranCooldown = true;
+	var chosenClass = true;
+
+	// Arena dead spots (by server)
+	var arenaDeadSpots = [];
+
+	// Initialize canvas
+	var canvas = document.getElementById("canvas");
+	var ctx = canvas.getContext("2d");
+	canvas.width = window.innerWidth;
+	canvas.height = window.innerHeight;
+	
+	// Adjust coordinate system to accommodate all screen sizes
+	var baseScreenHeight = 939;
+	var rectHeightRel = canvas.height / baseScreenHeight;
+	var relativeHeight = rectHeightRel;
+	var slider = document.getElementById("UIscale");
+	slider.value = relativeHeight * 50;
+	var currentReload = 0;
+
+	// Initialize the player and the core
+	var player = new Player(canvas, color);
+	var core = new Core(0, 0);
+	var ability = new Ability(0, 0);
+	var tower = new Tower(0, 0);
+	var regen = new Module(0, 0);
+	var tile = new Tile(0, 0);
+	player.core = core;
+
+	//Game update function
+	function update() {
+		// Interpolate other players
+		interpolateEntities(players);
+
+		// Interpolate other players bullets
+		for (var i = 0; i < players.length; i++) {
+			interpolateBullets(players[i].projectiles, delta)
+			//interpolateEntities(players[i].projectiles, true)
+			interpolateAngle(players[i])
+		}
+
+		// Interpolate client player
+		interpolateEntities([player])
+		
+		// Player movement and spectator movement
+		player.move(rawInput, delta, players);
+		if(play === 1) {
+			player.update(mouse, delta);
+		}
+
+		// Client Player data to upload to server
+		player.send(socket, core, rawInput, delta);
+	}
+	// Game draw function
+	function draw() {
+
+		// Update UI scale
+		relativeHeight = 0 + slider.value / 50;
+
+		// Update advanced options
+		var checkbox = document.getElementById("advancedOptions");
+		if(checkbox.checked) {
+			advancedOptions = true;
+		} else {
+			advancedOptions = false;
+		}
+
+		// Refresh the screen
+		ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+		// Draw background
+		ctx.beginPath();
+		ctx.globalAlpha = 1;
+		ctx.fillStyle = '#e6e6e6';
+		ctx.fillRect(0, 0, canvas.width, canvas.height);
+		ctx.closePath()
+
+		// Draw the grid
+		drawGrid();
+
+		drawDeadSpot();
+
+		// Draw players tiles
+		drawPlayersTiles(players);
+		drawPlayersProjectiles(players);
+		player.drawWalls();
+
+		if(play === 1 || play === 2) {
+			// Draw client core
+			core.draw(player, delta);
+
+			// Draw ability tile
+			ability.draw();
+			ability.update();
+			regen.draw();
+			regen.update();
+		}
+
+		if(play === 1) {
+			// Draw tiles
+			placeTile(player, players);	
+		}
+
+		// Draw players
+		drawPlayers(players)
+
+		// Draw core lightning
+		if(Math.floor(Math.random() * 50) === 1) {
+			core.drawLightning(player,players)
+		}	
+
+		// Draw UI
+		if(play === 1) {
+			//Draw client player
+			player.draw(delta);
+			player.hitDetection(players, socket, 1);
+		}
+
+		if(play === 1 || play === 2){
+			// Regen walls and cores
+			regen.regeneration();
+		}
+		if(play === 1) {
+			//Draw core UI
+			core.drawUI(player);
+
+			//Draw ability UI
+			ability.drawUI();
+			//tower.draw();
+			//tower.update();
+
+			//Draw client UI
+			drawUI(player, players);
+		}
+
+		//Draw player spectating
+		if(play === 0 && player.killerName) {
+			ctx.beginPath();
+			ctx.font = "30px Pier";
+			ctx.fillStyle = "Black";
+			ctx.textAlign="left"; 
+			ctx.fillText('Spectating', 40, canvas.height - 40);
+			ctx.font = "20px Pier";
+			ctx.fillText(player.killerName, 40, canvas.height - 20);
+			ctx.closePath();
+		}	
+
+		//Draw player respawn
+		if(play === 2) {
+			ctx.beginPath();
+			ctx.font = "30px Pier";
+			ctx.fillStyle = "Black";
+			ctx.textAlign="left"; 
+			ctx.fillText('Respawning in', 40, canvas.height - 40);
+			ctx.font = "20px Pier";
+			ctx.fillText((player.resetTime).toFixed(1) + 'Seconds', 40, canvas.height - 20);
+			ctx.closePath();
+		}	
+	}
+
+	// Frames optimizer
+	var fps = 1000;
+	var now;
+	var then = Date.now();
+	var interval = 1000/fps;
+	var delta;
+	var averageFps = 0;
+	var fpsArray = [];
+	var deltaArray = [];
+	var water = false;
+	var doneCheck = false;
+	//Game loop
+	function loop() {
+		requestAnimationFrame(loop);
+		now = Date.now();
+
+		// Calculate the average delta
+		deltaArray.push(now - then);
+		if (deltaArray.length > 30) {
+			deltaArray.shift();
+		}
+		delta = now-then;
+
+		if (delta > interval) {
+			// Update
+			then = now/* - (delta % interval)*/;
+			update();
+			draw();
+			fpsArray.push(1000/delta);
+			if (fpsArray.length > 30) {
+				fpsArray.shift();
+			}
+			averageFps = fpsArray.reduce((a, b) => a + b, 0)/fpsArray.length;
+		}
+	}
+	loop();
+	// Var
+	var tickRate = 15;
+	var nowT;
+	var thenT = Date.now();
+	var tick;
+
+	//Update rate
+	setInterval(function() {
+		nowT = Date.now();
+		delta = nowT-thenT;
+		thenT = nowT;
+	}, tickRate)
+
+	// Stuff to load when ready
+	$(document).ready(function () {
+		$("#name").click()
+	})
+</script>
+</body>
+</html>
