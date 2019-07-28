@@ -1,6 +1,8 @@
 // UI elements
 var slider = document.getElementById("UIscale");
 var classSelect = document.getElementById("playerClass");
+var lastPowerCycle = 0;
+var thisPowerCycle = 0;
 
 // Define
 var lobby;
@@ -22,6 +24,7 @@ function drawUI(player, players) {
 	if(eventInput[9]) {
 		drawPlayerInfo(uiBottomOffset, inventorySize);
 	} else {
+
 		// Draw UI minimap
 		drawMap(uiBottomOffset, mapSize);
 
@@ -50,24 +53,8 @@ function drawUI(player, players) {
 		drawAdvanced(averageArray, uiBottomOffset);
 
 		// Draw server kills
-		drawServerKills(uiBottomOffset);
-		
+		drawServerKills(uiBottomOffset);	
 	}	
-}
-
-function drawDeadSpot() {
-	if(arenaDeadSpots.length > 0) {
-		for (var i = 0; i < arenaDeadSpots.length; i++) {
-			if(inScreen(arenaDeadSpots[i].x, arenaDeadSpots[i].y, player)) {
-				ctx.beginPath();
-				ctx.fillStyle = '#4286f4';
-				ctx.globalAlpha = 1;
-				ctx.arc((arenaDeadSpots[i].x+Math.random() * 1)*rectHeightRel+canvas.width/2-player.pos.x*rectHeightRel, (arenaDeadSpots[i].y+Math.random() * 1)*rectHeightRel+canvas.height/2-player.pos.y*rectHeightRel, player.size / 4, 0, 2 * Math.PI);
-				ctx.fill();
-				ctx.closePath();
-			}
-		}
-	}
 }
 
 function drawPlayerInfo(uiBottomOffset, inventorySize) {
@@ -317,15 +304,30 @@ function drawPowerIncrease() {
 	var reloadHeight = 60 * relativeHeight;
 	var uiBottomOffset = 15 * relativeHeight;
 
-	// Draw increse text
+	if(lastPowerCycle != player.power) {
+		thisPowerCycle += player.power - lastPowerCycle;
+		increaseText = true;
+		setTimeout(function() { 
+			increaseText = false;
+			thisPowerCycle = 0;
+		}, 1000);
+	}
+
 	if(increaseText) {
 		ctx.beginPath();
 		ctx.font = 25*relativeHeight + "px Pier";
 		ctx.fillStyle = "White";
 		ctx.textAlign="right"; 
-		ctx.fillText('+' + increase, canvas.width - reloadWidth + reloadWidth - uiBottomOffset * 2, canvas.height - reloadHeight * 1.5 - uiBottomOffset * 2 + 25*relativeHeight / 2 - 2*relativeHeight, reloadWidth / 6);
+		ctx.textBaseline="middle"; 
+		if(thisPowerCycle > 0) {
+			ctx.fillText('+' + thisPowerCycle.toFixed(0), canvas.width - uiBottomOffset - 20*relativeHeight, canvas.height - reloadHeight * 2 - uiBottomOffset * 1.9 + reloadHeight / 2, reloadWidth - uiBottomOffset * 4);
+		} else {
+			ctx.fillText(thisPowerCycle.toFixed(0), canvas.width - uiBottomOffset - 20*relativeHeight, canvas.height - reloadHeight * 2 - uiBottomOffset * 1.9 + reloadHeight / 2, reloadWidth - uiBottomOffset * 4);
+		}	
 		ctx.closePath()
 	}
+
+	lastPowerCycle = player.power;
 
 }
 
@@ -339,19 +341,19 @@ function drawLeaderboard(uiBottomOffset, leaderboardSize, fontSize, leaderboardS
 	ctx.textAlign="left"; 
 	ctx.fillText('RANK', canvas.width - leaderboardSize, uiBottomOffset * 2);
 	ctx.fillText('NAME', canvas.width - leaderboardSize + 60 * relativeHeight, uiBottomOffset * 2);
-	ctx.fillText('SCORE', canvas.width - leaderboardSize + 200 * relativeHeight, uiBottomOffset * 2);
+	ctx.fillText('POWER', canvas.width - leaderboardSize + 200 * relativeHeight, uiBottomOffset * 2);
 	ctx.fillText('COLOR', canvas.width - leaderboardSize + 260 * relativeHeight, uiBottomOffset * 2);
 
 	lobby = [];
 	for (var i = 0; i < players.length; i++) {
-		if (players[i].hp > 0 && players[i].score > 0 && !player.dead && player.pos.x != 0 && player.pos.y != 0) {
+		if (players[i].hp > 0 && players[i].power > 0 && !player.dead && player.pos.x != 0 && player.pos.y != 0) {
 			lobby.push(players[i])
 		}
 	}
 	lobby.push(player)
 
 	// Sort the lobby
-	lobby.sort((a,b) => (a.score < b.score) ? 1 : ((b.score < a.score) ? -1 : 0));
+	lobby.sort((a,b) => (a.power < b.power) ? 1 : ((b.power < a.power) ? -1 : 0));
 	onLeader = false;
 
 	// Draw top 10 leaders
@@ -365,7 +367,7 @@ function drawLeaderboard(uiBottomOffset, leaderboardSize, fontSize, leaderboardS
 			}
 			ctx.fillText('#' + (i + 1), canvas.width - leaderboardSize, uiBottomOffset * 2 + leaderboardSpace * (i + 1));
 			ctx.fillText(leaderName, canvas.width - leaderboardSize + 60 * relativeHeight, uiBottomOffset * 2 + leaderboardSpace * (i + 1));
-			ctx.fillText(lobby[i].score.toFixed(2), canvas.width - leaderboardSize + 200 * relativeHeight, uiBottomOffset * 2 + leaderboardSpace * (i + 1));
+			ctx.fillText(lobby[i].power.toFixed(2), canvas.width - leaderboardSize + 200 * relativeHeight, uiBottomOffset * 2 + leaderboardSpace * (i + 1));
 			ctx.beginPath();
 			ctx.fillStyle = lobby[i].color;
 			ctx.arc(canvas.width - leaderboardSize + 260 * relativeHeight + 27 * relativeHeight, uiBottomOffset * 2 + (leaderboardSpace * (i + 1)) - fontSize / 2 - 2*relativeHeight,fontSize / 2,0,2*Math.PI);
@@ -383,7 +385,7 @@ function drawLeaderboard(uiBottomOffset, leaderboardSize, fontSize, leaderboardS
 			}
 			ctx.fillText('#' + (i + 1), canvas.width - leaderboardSize, uiBottomOffset * 2 + leaderboardSpace * (i + 1));
 			ctx.fillText(leaderName, canvas.width - leaderboardSize + 60 * relativeHeight, uiBottomOffset * 2 + leaderboardSpace * (i + 1));
-			ctx.fillText(lobby[i].score.toFixed(2), canvas.width - leaderboardSize + 200 * relativeHeight, uiBottomOffset * 2 + leaderboardSpace * (i + 1));
+			ctx.fillText(lobby[i].power.toFixed(2), canvas.width - leaderboardSize + 200 * relativeHeight, uiBottomOffset * 2 + leaderboardSpace * (i + 1));
 			ctx.beginPath();
 			ctx.fillStyle = lobby[i].color;
 			ctx.arc(canvas.width - leaderboardSize + 260 * relativeHeight + 25 * relativeHeight, uiBottomOffset * 2 + leaderboardSpace * (i + 1) - fontSize / 2 - 2 * relativeHeight,fontSize / 2,0,2*Math.PI);
@@ -398,7 +400,7 @@ function drawLeaderboard(uiBottomOffset, leaderboardSize, fontSize, leaderboardS
 			}
 			ctx.fillText('#' + (lobby.indexOf(player.power) + 1), canvas.width - leaderboardSize, uiBottomOffset * 2 + leaderboardSpace * (i + 1));
 			ctx.fillText(player.name, canvas.width - leaderboardSize + 60 * relativeHeight, uiBottomOffset * 2 + leaderboardSpace * (i + 1));
-			ctx.fillText(player.score.toFixed(2), canvas.width - leaderboardSize + 200, uiBottomOffset * 2 + leaderboardSpace * (i + 1));
+			ctx.fillText(player.power.toFixed(2), canvas.width - leaderboardSize + 200, uiBottomOffset * 2 + leaderboardSpace * (i + 1));
 			ctx.beginPath();
 			ctx.fillStyle = player.color;
 			ctx.arc(canvas.width - leaderboardSize + 260 * relativeHeight + 25 * relativeHeight, uiBottomOffset * 2 + leaderboardSpace * (i + 1) - fontSize / 2 - 2 * relativeHeight,fontSize / 2,0,2*Math.PI);
@@ -458,7 +460,7 @@ function drawCooldown(uiBottomOffset, averageArray) {
 	ctx.fillStyle = "White";
 	ctx.textAlign="left"; 
 	ctx.textBaseline="middle"; 
-	ctx.fillText((player.power).toFixed(2), canvas.width - reloadWidth, canvas.height - reloadHeight * 2 - uiBottomOffset * 2 + reloadHeight / 2, reloadWidth - uiBottomOffset * 4);
+	ctx.fillText((player.power).toFixed(2), canvas.width - reloadWidth, canvas.height - reloadHeight * 2 - uiBottomOffset * 1.9 + reloadHeight / 2, reloadWidth - uiBottomOffset * 4);
 	ctx.closePath()
 
 }
@@ -468,38 +470,29 @@ function drawInventory(uiBottomOffset, inventorySize) {
 	// Draw inventory slots
 	ctx.beginPath()
 	ctx.globalAlpha = 0.5;
-	ctx.drawImage(slot1, (canvas.width / 2 - inventorySize / 2) - inventorySize * 4 - uiBottomOffset * 4, canvas.height - inventorySize - uiBottomOffset, inventorySize, inventorySize);
-	ctx.drawImage(slot2, (canvas.width / 2 - inventorySize / 2) - inventorySize * 3 - uiBottomOffset * 3, canvas.height - inventorySize - uiBottomOffset, inventorySize, inventorySize);
-	ctx.drawImage(slot3, (canvas.width / 2 - inventorySize / 2) - inventorySize * 2 - uiBottomOffset * 2, canvas.height - inventorySize - uiBottomOffset, inventorySize, inventorySize);
-	ctx.drawImage(slot4, (canvas.width / 2 - inventorySize / 2) - inventorySize - uiBottomOffset, canvas.height - inventorySize - uiBottomOffset, inventorySize, inventorySize);
-	ctx.drawImage(slot5, canvas.width / 2 - inventorySize / 2, canvas.height - inventorySize - uiBottomOffset, inventorySize, inventorySize);
-	ctx.drawImage(slot6, (canvas.width / 2 - inventorySize / 2) + inventorySize + uiBottomOffset, canvas.height - inventorySize - uiBottomOffset, inventorySize, inventorySize);
-	ctx.drawImage(slot7, (canvas.width / 2 - inventorySize / 2) + inventorySize * 2 + uiBottomOffset * 2, canvas.height - inventorySize - uiBottomOffset, inventorySize, inventorySize);
-	ctx.drawImage(slot8, (canvas.width / 2 - inventorySize / 2) + inventorySize * 3 + uiBottomOffset * 3, canvas.height - inventorySize - uiBottomOffset, inventorySize, inventorySize);
-	ctx.drawImage(slot9, (canvas.width / 2 - inventorySize / 2) + inventorySize * 4 + uiBottomOffset * 4, canvas.height - inventorySize - uiBottomOffset, inventorySize, inventorySize);
+	ctx.drawImage(slot1, (canvas.width / 2 - inventorySize / 2) - inventorySize * 1.5 - uiBottomOffset * 1.5, canvas.height - inventorySize - uiBottomOffset, inventorySize, inventorySize);
+	ctx.drawImage(slot2, (canvas.width / 2 - inventorySize / 2) - inventorySize / 2 - uiBottomOffset / 2, canvas.height - inventorySize - uiBottomOffset, inventorySize, inventorySize);
+	ctx.drawImage(slot3, (canvas.width / 2 - inventorySize / 2) + inventorySize / 2 + uiBottomOffset / 2, canvas.height - inventorySize - uiBottomOffset, inventorySize, inventorySize);
+	ctx.drawImage(slot4, (canvas.width / 2 - inventorySize / 2) + inventorySize * 1.5 + uiBottomOffset * 1.5, canvas.height - inventorySize - uiBottomOffset, inventorySize, inventorySize);
 	ctx.globalAlpha = 0.7;
 	ctx.closePath()
 
 	// Draw inverntory items
 	ctx.beginPath()
 	ctx.fillStyle = player.color;
-	ctx.fillRect((canvas.width / 2 - inventorySize / 2) - inventorySize * 4 - uiBottomOffset * 4 + inventorySize / 4 + inventorySize / 27, canvas.height - inventorySize - uiBottomOffset + inventorySize / 4 + inventorySize / 27, inventorySize / 2 - inventorySize / 15, inventorySize / 2 - inventorySize / 15);
-	ctx.fillRect((canvas.width / 2 - inventorySize / 2) - inventorySize * 3 - uiBottomOffset * 3 + inventorySize / 4 + inventorySize / 27, canvas.height - inventorySize - uiBottomOffset + inventorySize / 4 + inventorySize / 27, inventorySize / 2 - inventorySize / 15, inventorySize / 2 - inventorySize / 15);
-	ctx.fillRect((canvas.width / 2 - inventorySize / 2) - inventorySize * 2 - uiBottomOffset * 2 + inventorySize / 4 + inventorySize / 27, canvas.height - inventorySize - uiBottomOffset + inventorySize / 4 + inventorySize / 27, inventorySize / 2 - inventorySize / 15, inventorySize / 2 - inventorySize / 15);
-	ctx.fillRect((canvas.width / 2 - inventorySize / 2) + inventorySize * 4 + uiBottomOffset * 4 + inventorySize / 4 + inventorySize / 27, canvas.height - inventorySize - uiBottomOffset + inventorySize / 4 + inventorySize / 27, inventorySize / 2 - inventorySize / 15, inventorySize / 2 - inventorySize / 15);
-	ctx.fillRect((canvas.width / 2 - inventorySize / 2) + inventorySize * 3 + uiBottomOffset * 3 + inventorySize / 4 + inventorySize / 27, canvas.height - inventorySize - uiBottomOffset + inventorySize / 4 + inventorySize / 27, inventorySize / 2 - inventorySize / 15, inventorySize / 2 - inventorySize / 15);
-	// ctx.fillRect((canvas.width / 2 - inventorySize / 2) + inventorySize * 2 + uiBottomOffset * 2 + inventorySize / 4 + inventorySize / 27, canvas.height - inventorySize - uiBottomOffset + inventorySize / 4 + inventorySize / 27, inventorySize / 2 - inventorySize / 15, inventorySize / 2 - inventorySize / 15);
+	ctx.fillRect((canvas.width / 2 - inventorySize / 2) - inventorySize * 1.5 - uiBottomOffset * 1.5 + inventorySize / 4 + inventorySize / 27, canvas.height - inventorySize - uiBottomOffset + inventorySize / 4 + inventorySize / 27, inventorySize / 2 - inventorySize / 15, inventorySize / 2 - inventorySize / 15);
+	ctx.fillRect((canvas.width / 2 - inventorySize / 2) - inventorySize / 2 - uiBottomOffset / 2 + inventorySize / 4 + inventorySize / 27, canvas.height - inventorySize - uiBottomOffset + inventorySize / 4 + inventorySize / 27, inventorySize / 2 - inventorySize / 15, inventorySize / 2 - inventorySize / 15);
+	ctx.fillRect((canvas.width / 2 - inventorySize / 2) + inventorySize * 1.5 + uiBottomOffset * 1.5 + inventorySize / 4 + inventorySize / 27, canvas.height - inventorySize - uiBottomOffset + inventorySize / 4 + inventorySize / 27, inventorySize / 2 - inventorySize / 15, inventorySize / 2 - inventorySize / 15);
+	ctx.fillRect((canvas.width / 2 - inventorySize / 2) + inventorySize / 2 + uiBottomOffset / 2 + inventorySize / 4 + inventorySize / 27, canvas.height - inventorySize - uiBottomOffset + inventorySize / 4 + inventorySize / 27, inventorySize / 2 - inventorySize / 15, inventorySize / 2 - inventorySize / 15);
 	ctx.globalAlpha = 1;
 	ctx.closePath()
 
 	// Draw inventory item color
 	ctx.beginPath()
-	ctx.drawImage(wallTile,  (canvas.width / 2 - inventorySize / 2) - inventorySize * 4 - uiBottomOffset * 4 + inventorySize / 4, canvas.height - inventorySize - uiBottomOffset + inventorySize / 4, inventorySize / 2, inventorySize / 2);
-	ctx.drawImage(regenTile1,  (canvas.width / 2 - inventorySize / 2) - inventorySize * 3 - uiBottomOffset * 3 + inventorySize / 4, canvas.height - inventorySize - uiBottomOffset + inventorySize / 4, inventorySize / 2, inventorySize / 2);
-	ctx.drawImage(shieldTile1,  (canvas.width / 2 - inventorySize / 2) - inventorySize * 2 - uiBottomOffset * 2 + inventorySize / 4, canvas.height - inventorySize - uiBottomOffset + inventorySize / 4, inventorySize / 2, inventorySize / 2);
-	ctx.drawImage(coreTile1,  (canvas.width / 2 - inventorySize / 2) + inventorySize * 4 + uiBottomOffset * 4 + inventorySize / 4, canvas.height - inventorySize - uiBottomOffset + inventorySize / 4, inventorySize / 2, inventorySize / 2);
-	ctx.drawImage(abilityUpgrader,  (canvas.width / 2 - inventorySize / 2) + inventorySize * 3 + uiBottomOffset * 3 + inventorySize / 4, canvas.height - inventorySize - uiBottomOffset + inventorySize / 4, inventorySize / 2, inventorySize / 2);
-	// ctx.drawImage(towerTile1,  (canvas.width / 2 - inventorySize / 2) + inventorySize * 2 + uiBottomOffset * 2 + inventorySize / 4, canvas.height - inventorySize - uiBottomOffset + inventorySize / 4, inventorySize / 2, inventorySize / 2);
+	ctx.drawImage(wallTile,  (canvas.width / 2 - inventorySize / 2) - inventorySize * 1.5 - uiBottomOffset * 1.5 + inventorySize / 4, canvas.height - inventorySize - uiBottomOffset + inventorySize / 4, inventorySize / 2, inventorySize / 2);
+	ctx.drawImage(regenTile1,  (canvas.width / 2 - inventorySize / 2) - inventorySize / 2 - uiBottomOffset / 2 + inventorySize / 4, canvas.height - inventorySize - uiBottomOffset + inventorySize / 4, inventorySize / 2, inventorySize / 2);
+	ctx.drawImage(coreTile1,  (canvas.width / 2 - inventorySize / 2) + inventorySize * 1.5 + uiBottomOffset * 1.5 + inventorySize / 4, canvas.height - inventorySize - uiBottomOffset + inventorySize / 4, inventorySize / 2, inventorySize / 2);
+	ctx.drawImage(abilityUpgrader,  (canvas.width / 2 - inventorySize / 2) + inventorySize / 2 + uiBottomOffset / 2 + inventorySize / 4, canvas.height - inventorySize - uiBottomOffset + inventorySize / 4, inventorySize / 2, inventorySize / 2);
 	ctx.globalAlpha = 0.5;
 	ctx.closePath()
 
@@ -507,7 +500,7 @@ function drawInventory(uiBottomOffset, inventorySize) {
 	ctx.beginPath()
 	if(core.exists === true || !ranCooldown) {
 		ctx.fillStyle = "red";
-		ctx.fillRect((canvas.width / 2 - inventorySize / 2) + inventorySize * 4 + uiBottomOffset * 4 + inventorySize / 4 + inventorySize / 27, canvas.height - inventorySize - uiBottomOffset + inventorySize / 4 + inventorySize / 27, inventorySize / 2 - inventorySize / 15, inventorySize / 2 - inventorySize / 15);
+		ctx.fillRect((canvas.width / 2 - inventorySize / 2) + inventorySize * 1.5 + uiBottomOffset * 1.5 + inventorySize / 4 + inventorySize / 27, canvas.height - inventorySize - uiBottomOffset + inventorySize / 4 + inventorySize / 27, inventorySize / 2 - inventorySize / 15, inventorySize / 2 - inventorySize / 15);
 	}
 	if(!ranCooldown && cooldownRemain != 0) {
 		ctx.globalAlpha = 1;
@@ -515,7 +508,7 @@ function drawInventory(uiBottomOffset, inventorySize) {
 		ctx.fillStyle = "Black";
 		ctx.textAlign="center"; 
 		ctx.textBaseline="middle";
-		ctx.fillText(cooldownRemain, (canvas.width / 2 - inventorySize / 2) + inventorySize * 4 + uiBottomOffset * 4 + inventorySize / 2, canvas.height - inventorySize - uiBottomOffset + inventorySize / 2, inventorySize, inventorySize);
+		ctx.fillText(cooldownRemain, (canvas.width / 2 - inventorySize / 2) + inventorySize * 1.5 + uiBottomOffset * 1.5 + inventorySize / 2, canvas.height - inventorySize - uiBottomOffset + inventorySize / 2, inventorySize, inventorySize);
 	}
 	ctx.closePath()
 }
@@ -541,60 +534,6 @@ function drawMessage(message) {
 	ctx.fillText(message, canvas.width / 2, uiBottomOffset + inventorySize /4, canvas.width / 3 * relativeHeight - uiBottomOffset, inventorySize / 2);
 	ctx.fill();
 	
-}
-
-function drawGrid() {
-
-	// Draw grid
-	ctx.strokeStyle = "black";
-	if(play === 3) {
-		ctx.lineWidth = 0.2;
-		ctx.globalAlpha = 1;
-	} else {
-		ctx.lineWidth = 0.5;
-		ctx.globalAlpha = 0.5;
-	}
-
-	// Create grid offset from drawing when zooming
-	ctx.beginPath();
-	var rightOffset = -player.pos.x*rectHeightRel%player.size/player.size
-	for (var x = rightOffset+1; x < canvas.width/player.size; x++) {
-		ctx.moveTo(x*player.size+canvas.width/2, 0);
-		ctx.lineTo(x*player.size+canvas.width/2, canvas.height);
-	}
-	var leftOffset = player.pos.x*rectHeightRel%player.size/player.size
-	for (var x = leftOffset; x < canvas.width/player.size; x++) {
-		ctx.moveTo(x*-player.size+canvas.width/2, 0);
-		ctx.lineTo(x*-player.size+canvas.width/2, canvas.height);
-	}
-	var bottomOffset = -player.pos.y*rectHeightRel%player.size/player.size;
-	for (var y = bottomOffset+1; y < canvas.height/player.size; y++) {
-		ctx.moveTo(0, y*player.size+canvas.height/2);
-		ctx.lineTo(canvas.width, y*player.size+canvas.height/2);
-	}
-	var topOffset = player.pos.y*rectHeightRel%player.size/player.size;
-	for (var y = topOffset; y < canvas.height/player.size; y++) {
-		ctx.moveTo(0, y*-player.size+canvas.height/2);
-		ctx.lineTo(canvas.width, y*-player.size+canvas.height/2);
-	}
-	ctx.stroke();
-	ctx.closePath();
-
-	// Reset Alpha
-	ctx.globalAlpha = 1;
-
-	// Draw map boundaries
-	ctx.beginPath();
-	ctx.strokeStyle = "black"
-	ctx.lineWidth = 2;
-	ctx.moveTo(-arenaSize*rectHeightRel-player.pos.x*rectHeightRel+canvas.width/2, -arenaSize*rectHeightRel-player.pos.y*rectHeightRel+canvas.height/2);
-	ctx.lineTo(-arenaSize*rectHeightRel-player.pos.x*rectHeightRel+canvas.width/2, arenaSize*rectHeightRel-player.pos.y*rectHeightRel+canvas.height/2);
-	ctx.lineTo(arenaSize*rectHeightRel-player.pos.x*rectHeightRel+canvas.width/2, arenaSize*rectHeightRel-player.pos.y*rectHeightRel+canvas.height/2);
-	ctx.lineTo(arenaSize*rectHeightRel-player.pos.x*rectHeightRel+canvas.width/2, -arenaSize*rectHeightRel-player.pos.y*rectHeightRel+canvas.height/2);
-	ctx.lineTo(-arenaSize*rectHeightRel-player.pos.x*rectHeightRel+canvas.width/2, -arenaSize*rectHeightRel-player.pos.y*rectHeightRel+canvas.height/2);
-	ctx.stroke();
-	ctx.closePath();
-
 }
 
 function drawMap(uiBottomOffset, mapSize) {
@@ -651,214 +590,6 @@ function drawMap(uiBottomOffset, mapSize) {
 	}
 
 }
-
-function drawPlayers(players) {
-	ctx.globalAlpha = 1;
-
-	for(var i = 0; i < players.length; i++) {
-		if (players[i].id != socket.id) {
-			// Draw player's cores
-			if(players[i].core && players[i].core.exists == true && inScreen(players[i].core.pos.x, players[i].core.pos.y, player)) {
-				if(players[i].core.level === 3) {
-					ctx.beginPath();
-					ctx.fillStyle = 'Black';
-					ctx.globalAlpha = 0.08;
-					ctx.filter = "blur(25px)";
-					ctx.arc(players[i].core.pos.x*rectHeightRel+canvas.width/2-player.pos.x*rectHeightRel + player.size, players[i].core.pos.y*rectHeightRel+canvas.height/2-player.pos.y*rectHeightRel + player.size, player.size * 4, 0, 2 * Math.PI);
-					ctx.fill();
-					ctx.filter = "none";
-					ctx.globalAlpha = 1;
-					ctx.closePath()
-				}
-
-				// Draw player halo
-				ctx.beginPath();
-				ctx.fillStyle = players[i].color;
-				ctx.globalAlpha = 0.3;
-				ctx.filter = "blur(40px)";
-				ctx.arc(players[i].core.pos.x*rectHeightRel+canvas.width/2-player.pos.x*rectHeightRel + player.size, players[i].core.pos.y*rectHeightRel+canvas.height/2-player.pos.y*rectHeightRel + player.size, player.size * 2, 0, 2 * Math.PI);
-				ctx.fill();
-				ctx.globalAlpha = 1;
-				ctx.filter = "none";
-
-				// Draw core background
-				ctx.fillRect(players[i].core.pos.x*rectHeightRel+canvas.width/2-player.pos.x*rectHeightRel + player.size / 10, players[i].core.pos.y*rectHeightRel+canvas.height/2-player.pos.y*rectHeightRel + player.size / 10, player.size * 2 - player.size / 5, player.size * 2 - player.size / 5);
-
-				// Draw core levels
-				if(players[i].core.level === 1) {
-					ctx.drawImage(coreTile1, players[i].core.pos.x*rectHeightRel+canvas.width/2-player.pos.x*rectHeightRel, players[i].core.pos.y*rectHeightRel+canvas.height/2-player.pos.y*rectHeightRel, player.size * 2, player.size * 2);
-				} else if(players[i].core.level === 2) {
-					ctx.drawImage(coreTile2, players[i].core.pos.x*rectHeightRel+canvas.width/2-player.pos.x*rectHeightRel, players[i].core.pos.y*rectHeightRel+canvas.height/2-player.pos.y*rectHeightRel, player.size * 2, player.size * 2);
-				} else if(players[i].core.level === 3) {
-					ctx.drawImage(coreTile3, players[i].core.pos.x*rectHeightRel+canvas.width/2-player.pos.x*rectHeightRel, players[i].core.pos.y*rectHeightRel+canvas.height/2-player.pos.y*rectHeightRel, player.size * 2, player.size * 2);
-				}
-
-				// Draw core health
-				if (players[i].core.hp < 100) {
-					ctx.fillStyle = players[i].color;
-					ctx.fillRect(players[i].core.pos.x*rectHeightRel+canvas.width/2-player.pos.x*rectHeightRel, players[i].core.pos.y*rectHeightRel+canvas.height/2-player.pos.y*rectHeightRel + player.size * 2.2, players[i].core.hp*rectHeightRel, player.size / 4);
-					ctx.closePath()
-				}
-			}
-
-			// Draw player ability upgrader
-			if(players[i].ability && players[i].ability.exists == true && inScreen(players[i].ability.pos.x, players[i].ability.pos.y, player)) {
-				ctx.beginPath();
-				ctx.fillStyle = players[i].color;
-				ctx.fillRect(players[i].ability.pos.x*rectHeightRel+canvas.width/2-player.pos.x*rectHeightRel + player.size / 10, players[i].ability.pos.y*rectHeightRel+canvas.height/2-player.pos.y*rectHeightRel + player.size / 10, player.size * 2 - player.size / 5, player.size * 2 - player.size / 5);
-				ctx.drawImage(abilityUpgrader, players[i].ability.pos.x*rectHeightRel+canvas.width/2-player.pos.x*rectHeightRel, players[i].ability.pos.y*rectHeightRel+canvas.height/2-player.pos.y*rectHeightRel, player.size * 2, player.size * 2);
-				ctx.closePath();
-
-			}
-
-			if (players[i] && !players[i].dead && inScreen(players[i].pos.x, players[i].pos.y, player)) {
-
-				ctx.globalAlpha = 1;
-				// Draw players hp
-				ctx.beginPath();
-				ctx.strokeStyle = "black";
-				ctx.lineCap = "round";
-				ctx.lineWidth = 12 * rectHeightRel;
-				ctx.moveTo(players[i].pos.x*rectHeightRel+canvas.width/2-player.pos.x*rectHeightRel-player.size*3/4, players[i].pos.y*rectHeightRel+canvas.height/2-player.pos.y*rectHeightRel + player.size*3/4)
-				ctx.lineTo(players[i].pos.x*rectHeightRel+canvas.width/2-player.pos.x*rectHeightRel-player.size*3/4+(players[i].hp/players[i].maxHP*75)*rectHeightRel, players[i].pos.y*rectHeightRel+canvas.height/2-player.pos.y*rectHeightRel + player.size*3/4)
-				ctx.stroke();
-				ctx.strokeStyle = players[i].color;
-				ctx.lineWidth = 10 * rectHeightRel;
-				ctx.stroke();
-				ctx.lineCap = "butt";
-
-				// Draw players cannon
-				ctx.beginPath();
-				ctx.strokeStyle = "grey";
-				ctx.lineWidth = players[i].barrelSize/2*rectHeightRel
-				ctx.moveTo(players[i].pos.x*rectHeightRel+canvas.width/2-player.pos.x*rectHeightRel, players[i].pos.y*rectHeightRel+canvas.height/2-player.pos.y*rectHeightRel);
-				players[i].angle = new Vector(players[i].angle.x, players[i].angle.y)
-				players[i].angle.normalize();
-				players[i].angle.mult((players[i].barrelLength));
-				ctx.lineTo(players[i].pos.x*rectHeightRel+canvas.width/2-player.pos.x*rectHeightRel+players[i].angle.x*rectHeightRel, players[i].pos.y*rectHeightRel+canvas.height/2-player.pos.y*rectHeightRel+players[i].angle.y*rectHeightRel);
-				ctx.stroke();
-				ctx.closePath();
-
-				// Draw players body
-				ctx.beginPath();
-				ctx.fillStyle = 'black';
-				ctx.arc(players[i].pos.x*rectHeightRel+canvas.width/2-player.pos.x*rectHeightRel, players[i].pos.y*rectHeightRel+canvas.height/2-player.pos.y*rectHeightRel, player.size/2, 0, 2 * Math.PI, false);
-				ctx.fill();
-				ctx.closePath()
-				ctx.fillStyle = players[i].color;
-				ctx.beginPath();
-				ctx.arc(players[i].pos.x*rectHeightRel+canvas.width/2-player.pos.x*rectHeightRel, players[i].pos.y*rectHeightRel+canvas.height/2-player.pos.y*rectHeightRel, player.size/2.3, 0, 2 * Math.PI, false);
-				ctx.fill();
-				ctx.closePath();
-
-				// Draw players name
-				if(play != 3) {
-					ctx.beginPath();
-		    		ctx.font = "13px Pier";
-		    		ctx.fillStyle = "Black";
-		    		ctx.textAlign="center"; 
-		    		ctx.textBaseline="bottom";
-					ctx.fillText(players[i].name, players[i].pos.x*rectHeightRel+canvas.width/2-player.pos.x*rectHeightRel, players[i].pos.y*rectHeightRel+canvas.height/2-player.pos.y*rectHeightRel - player.size / 2);
-				
-
-					// Draw the players kill count
-					var playerPos = new Vector(players[i].pos.x, players[i].pos.y);
-					playerPos.sub(player.pos)
-					var distance = playerPos.getMag();
-					if (distance < 400 && players[i].killCount > 0) {
-						ctx.fillText(' (' + players[i].killCount + ' Kills)', players[i].pos.x*rectHeightRel+canvas.width/2-player.pos.x*rectHeightRel, players[i].pos.y*rectHeightRel+canvas.height/2-player.pos.y*rectHeightRel - player.size /1.1,);
-					}
-					ctx.closePath()
-				}
-
-				// Draw player kill streak
-				if(players[i].killStreak > 1) {
-					ctx.beginPath();
-					ctx.font = 25*rectHeightRel + "px Pier";
-					ctx.fillStyle = "Black";
-					ctx.textAlign="center"; 
-					ctx.textBaseline="middle"; 
-					ctx.fillText(players[i].killStreak + 'X', players[i].pos.x*rectHeightRel+canvas.width/2-player.pos.x*rectHeightRel, players[i].pos.y*rectHeightRel+canvas.height/2-player.pos.y*rectHeightRel, player.size/1.2, player.size / 1.2);
-					ctx.closePath()
-				}
-			}
-
-			if(players[i].modules.length > 0) {
-				for (var k = 0; k < players[i].modules.length; k++) {
-					ctx.beginPath();
-					ctx.globalAlpha = 0.5;
-					ctx.strokeStyle = players[i].color;
-					ctx.lineWidth=10*rectHeightRel;
-					ctx.arc(players[i].modules[k].pos.x*rectHeightRel+canvas.width/2-player.pos.x*rectHeightRel + player.size / 2, players[i].modules[k].pos.y*rectHeightRel+canvas.height/2-player.pos.y*rectHeightRel + player.size / 2, 300*rectHeightRel, 0, 2 * Math.PI, false);
-					ctx.stroke();
-					ctx.closePath();
-
-					ctx.beginPath();
-					ctx.globalAlpha = 1;
-					ctx.fillStyle = players[i].color;
-					ctx.fillRect(players[i].modules[k].pos.x*rectHeightRel+canvas.width/2-player.pos.x*rectHeightRel + player.size / 10, players[i].modules[k].pos.y*rectHeightRel+canvas.height/2-player.pos.y*rectHeightRel + player.size / 10, player.size - player.size / 5, player.size - player.size / 5);
-					ctx.closePath();
-
-					ctx.beginPath();
-					ctx.globalAlpha = 1;
-					ctx.drawImage(regenTile1, players[i].modules[k].pos.x*rectHeightRel+canvas.width/2-player.pos.x*rectHeightRel, players[i].modules[k].pos.y*rectHeightRel+canvas.height/2-player.pos.y*rectHeightRel, player.size, player.size);
-					ctx.closePath();
-
-					if (players[i].modules[k].hp < 50) {
-						ctx.beginPath();
-						ctx.fillStyle = players[i].color;
-						ctx.fillRect(players[i].modules[k].pos.x*rectHeightRel+canvas.width/2-player.pos.x*rectHeightRel, players[i].modules[k].pos.y*rectHeightRel+canvas.height/2-player.pos.y*rectHeightRel + player.size * 1.2, players[i].modules[k].hp*rectHeightRel, player.size / 4);
-						ctx.closePath()
-					}
-
-					/*for (var j = 0; j < players[i].walls.length; j++) {
-						var playerDistance = new Vector(players[i].walls[j].pos.x, players[i].walls[j].pos.y)
-						playerDistance.sub(new Vector(players[i].modules[k].x, players[i].modules[k].y));
-						if (playerDistance.getMag() < 300*rectHeightRel) {
-							if(players[i].walls[j].hp < 59) {
-								players[i].walls[j].hp += 0.05;
-								ctx.beginPath();
-								ctx.globalAlpha = 0.8;
-								ctx.drawImage(regenCover1, players[i].walls[j].pos.x*rectHeightRel+canvas.width/2-players[i].pos.x*rectHeightRel, players[i].walls[j].pos.y*rectHeightRel+canvas.height/2-players[i].pos.y*rectHeightRel, player.size, player.size);
-								ctx.closePath();
-							}
-						}	
-					}*/
-				}
-			}
-		}
-	}
-}
-
-function drawPlayersProjectiles(players) {
-	// Draw projectiles
-	for (var i = 0; i < players.length; i++) {
-		for (var j = 0; j < players[i].projectiles.length; j++) {
-			if (inScreen(players[i].projectiles[j].pos.x, players[i].projectiles[j].pos.y, player)) {
-				if (players[i].class.value != 1) {
-					ctx.beginPath();
-					ctx.arc(players[i].projectiles[j].pos.x*rectHeightRel+canvas.width/2-player.pos.x*rectHeightRel, players[i].projectiles[j].pos.y*rectHeightRel+canvas.height/2-player.pos.y*rectHeightRel, players[i].projectiles[j].actualSize*rectHeightRel/2, 0, 2 * Math.PI, false);
-					ctx.fillStyle = "black";
-					ctx.fill();
-					ctx.closePath()
-				} else {
-					ctx.beginPath();
-					ctx.lineWidth = rectHeightRel*players[i].projectiles[j].actualSize;
-					var x = players[i].projectiles[j].pos.x*rectHeightRel+canvas.width/2-player.pos.x*rectHeightRel
-					var y =  players[i].projectiles[j].pos.y*rectHeightRel+canvas.height/2-player.pos.y*rectHeightRel
-					ctx.moveTo(x, y)
-					var target = new Vector(players[i].projectiles[j].target.x, players[i].projectiles[j].target.y)
-					target.normalize();
-					target.mult(rectHeightRel*30);
-					ctx.lineTo(x+target.x, y+target.y)
-					ctx.strokeStyle = "black";
-					ctx.stroke();
-				}
-			}
-		}
-	}
-}
-
 
 function fillRoundedRect(x, y, w, h, r){
 	// Draw rounded rectangle

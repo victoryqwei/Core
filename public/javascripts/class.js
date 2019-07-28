@@ -11,6 +11,7 @@ playerSoldier.onclick = function() {
 	}
 	player.cooldownDelay = 300;
 	player.damage = 10;
+	player.speed = 22;
 	player.hp = 50;
 	player.maxHP = 50;
 	player.maxView = 0.6;
@@ -26,7 +27,7 @@ playerSniper.onclick = function() {
 	player.cooldownDelay = 1000;
 	player.damage = 25;
 	player.barrelSize = 20;
-	player.speed = 20;
+	player.speed = 16;
 	player.hp = 50;
 	player.maxHP = 50;
 	player.maxView = 0.6;
@@ -55,10 +56,10 @@ playerCannoneer.onclick = function() {
 		name: "cannoneer",
 		value: 3
 	}
-	player.cooldownDelay = 200;
+	player.cooldownDelay = 800;
 	player.damage = 10;
 	player.barrelSize = 60;
-	player.speed = 20;
+	player.speed = 15;
 	player.hp = 80;
 	player.maxHP = 80;
 	player.maxView = 0.6;

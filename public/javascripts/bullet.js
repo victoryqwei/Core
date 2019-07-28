@@ -36,7 +36,8 @@ class Bullet {
 		// Change bullet type based on class
 		switch (playerClass.value) {
 			case 0:
-
+				this.actualSize = 20;
+				this.speed = 75;
 				break;
 			case 1:
 				this.actualSize = 10;
@@ -54,7 +55,29 @@ class Bullet {
 				break;
 		}
 	}
-	move(deltaTime) {
+	move(deltaTime, playerClass) {
+		// Change bullet type based on class
+		switch (playerClass.value) {
+			case 0:
+				this.actualSize = 20;
+				this.speed = 75;
+				break;
+			case 1:
+				this.actualSize = 10;
+				this.speed = 200;
+				break;
+			case 2:
+				this.actualSize = 15;
+				this.speed = 40;
+				break;
+			case 3:
+				this.actualSize = 40;
+				this.speed = 50;
+				this.radius = 2;
+				this.timeLimit = 1500;
+				break;
+		}
+
 		// AIMBOT
 		/*var dead = true;
 		for (var i = 0; i < players.length; i++) {

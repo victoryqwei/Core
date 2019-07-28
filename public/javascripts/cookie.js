@@ -1,3 +1,41 @@
+// Color var
+var hexColor = $("#color").val();
+var color = hexToRgb($("#color").val());
+
+// Color for random RGB value
+function getRandomRgb() {
+  var num = Math.round(0xffffff * Math.random());
+  var r = num >> 16;
+  var g = num >> 8 & 255;
+  var b = num & 255;
+  return 'rgb(' + r + ', ' + g + ', ' + b + ')';
+}
+
+// Create an RGB value from he value
+function hexToRgb(hex) {
+    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+    } : null;
+}
+
+// Save color to cookie if there is no color saved
+if(getCookie('userColor') != "") {
+    $("#color").val(JSON.parse(getCookie('userColor')));
+} else {
+    $("#color").val('#'+(Math.random()*0xFFFFFF<<0).toString(16))
+}   
+
+// If name is empty change value of nametag to cookie value
+if(getCookie('userName') != "") {
+var nameBox = document.getElementById("name");
+nameBox.value = JSON.parse(getCookie('userName'))
+}
+
+// Cookie functions for storing and getting data
+
 function setCookie(cname,cvalue,exdays) {
     var d = new Date(); 
     d.setTime(d.getTime() + (exdays*1000*60*60*24));

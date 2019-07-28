@@ -1,3 +1,26 @@
+var wallLevels = [
+	{ // Broken Wall
+		hp: 25,
+		cost: 4
+	}, 
+	{ // Level 1
+		hp: 50,
+		cost: 10
+	}, 
+	{ // 2
+		hp: 80,
+		cost: 12
+	}, 
+	{ // 3
+		hp: 120,
+		cost: 15
+	}, 
+	{ // 4
+		hp: 180,
+		cost: 20
+	}
+]
+
 class Tile {
 	constructor(x, y, type, id) {
 		// Type
@@ -10,7 +33,7 @@ class Tile {
 		this.pos = new Vector(x, y);
 
 		// Hp
-		this.hp = 20;
+		this.hp = 0;
 
 		// Id
 		this.id = id;
@@ -33,15 +56,15 @@ class Tile {
 
 			var wallImage = undefined;
 
-			if (wall.hp < 20) {
+			if (wall.hp <= wallLevels[0].hp) {
 				wallImage = wallBroken;
-			} else if (wall.hp < 30) {
+			} else if (wall.hp <= wallLevels[1].hp) {
 				wallImage = wallTile;
-			} else if (wall.hp < 40) {
+			} else if (wall.hp <= wallLevels[2].hp) {
 				wallImage = wallTile2;
-			} else if (wall.hp < 50) {
+			} else if (wall.hp <= wallLevels[3].hp) {
 				wallImage = wallTile3;
-			} else if (wall.hp < 60) {
+			} else {
 				wallImage = wallTile4;
 			}
 
@@ -103,20 +126,20 @@ function placeTile(player, players) {
 		for(var i = 0; i < player.walls.length; i++) {
 			if(player.walls[i].pos.x === world.x && player.walls[i].pos.y === world.y) {
 				var wall = player.walls[i];
-				if (wall.hp < 20 && player.power >= 1) {
-					drawPreview(wallTile, 'Level 1 Wall', 'Prevents 20 damage from bullets.', 1)
+				if (wall.hp < wallLevels[1].hp && player.power >= wallLevels[0].cost) {
+					drawPreview(wallTile, 'Repair Wall', 'Blocks '+wallLevels[1].hp+' damage from bullets.', wallLevels[0].cost)
 					exists = true;
 					previewUI = true;
-				} else if (wall.hp < 30 && player.power >= 3) {
-					drawPreview(wallTile2, 'Level 2 Wall', 'Prevents 30 damage from bullets.', 3)
+				} else if (wall.hp < wallLevels[2].hp && player.power >= wallLevels[2].cost) {
+					drawPreview(wallTile2, 'Level 2 Wall', 'Blocks '+wallLevels[2].hp+' damage from bullets.', wallLevels[2].cost)
 					exists = true;
 					previewUI = true;
-				} else if (wall.hp < 40 && player.power >= 5) {
-					drawPreview(wallTile3, 'Level 3 Wall', 'Prevents 40 damage from bullets.', 5)
+				} else if (wall.hp < wallLevels[3].hp && player.power >= wallLevels[3].cost) {
+					drawPreview(wallTile3, 'Level 3 Wall', 'Blocks '+wallLevels[3].hp+' damage from bullets.', wallLevels[3].cost)
 					exists = true;
 					previewUI = true;
-				} else if (wall.hp < 50 && player.power >= 10) {
-					drawPreview(wallTile4, 'Level 4 Wall', 'Prevents 50 damage from bullets.', 10)
+				} else if (wall.hp < wallLevels[4].hp && player.power >= wallLevels[4].cost) {
+					drawPreview(wallTile4, 'Level 4 Wall', 'Blocks '+wallLevels[4].hp+' damage from bullets.', wallLevels[4].cost)
 					exists = true;
 					previewUI = true;
 				} else {
@@ -128,7 +151,7 @@ function placeTile(player, players) {
 		}
 
 		if (!exists) {
-			drawPreview(wallTile, 'Level 1 Wall', 'Prevents 20 damage from bullets.', 1)
+			drawPreview(wallTile, 'Level 1 Wall', 'Prevents '+wallLevels[1].hp+' damage from bullets.', wallLevels[1].cost)
 			previewUI = true;
 		}
 
@@ -142,30 +165,31 @@ function placeTile(player, players) {
 					if (!player.walls[i].click) {
 						var wall = player.walls[i];
 
-						if (wall.hp < 20 && player.power >= 1) {
-							wall.hp = 20;
+						if (wall.hp < wallLevels[1].hp && player.power >= wallLevels[0].cost) {
+							wall.hp = wallLevels[1].hp;
 							player.walls[i].click = true;
-						} else if (wall.hp < 30 && player.power >= 3) {
-							wall.hp = 30;
-							player.power -= 3;
+						} else if (wall.hp < wallLevels[2].hp && player.power >= wallLevels[2].cost) {
+							wall.hp = wallLevels[2].hp;
+							player.power -= wallLevels[2].cost;
 							player.walls[i].click = true;
-						} else if (wall.hp < 40 && player.power >= 5) {
-							wall.hp = 40;
-							player.power -= 5;
+						} else if (wall.hp < wallLevels[3].hp && player.power >= wallLevels[3].cost) {
+							wall.hp = wallLevels[3].hp;
+							player.power -= wallLevels[3].cost;
 							player.walls[i].click = true;
-						} else if (wall.hp < 50 && player.power >= 10) {
-							wall.hp = 50;
-							player.power -= 10;
+						} else if (wall.hp < wallLevels[4].hp && player.power >= wallLevels[4].cost) {
+							wall.hp = wallLevels[4].hp;
+							player.power -= wallLevels[4].cost;
 							player.walls[i].click = true;
 						}
 						//player.newWalls.push(player.walls[i]);
 					}
 				}
 			}
-		} else if(place === true && player.drawPlaceMode(wallTile, player.size, false) == false && !exists && player.power >= 1) {
+		} else if(place === true && player.drawPlaceMode(wallTile, player.size, false) == false && !exists && player.power >= wallLevels[1].cost) {
 			// Place a new wall
-			player.power -= 1;
+			player.power -= wallLevels[1].cost;
 			newWall = new Tile(world.x, world.y, "wall", randomString(10));
+			newWall.hp = wallLevels[1].hp;
 
 			// Send the new wall to the server
 			player.walls.push(newWall)
@@ -176,47 +200,3 @@ function placeTile(player, players) {
 	}
 }
 
-function drawPlayersTiles(players) {
-	//Render other player walls
-	for(var i = 0; i < players.length; i++) {
-		if (players[i].walls) {
-			for(var j = 0; j < players[i].walls.length; j++) {
-				if(inScreen(players[i].walls[j].pos.x, players[i].walls[j].pos.y, player)) {
-					ctx.beginPath();
-					ctx.fillStyle = players[i].color;
-					ctx.fillRect(players[i].walls[j].pos.x*rectHeightRel+canvas.width/2-player.pos.x*rectHeightRel + player.size / 10, players[i].walls[j].pos.y*rectHeightRel+canvas.height/2-player.pos.y*rectHeightRel + player.size / 10, player.size - player.size / 5, player.size - player.size / 5);
-					ctx.closePath();
-
-					var wallImage = undefined;
-					var wall = players[i].walls[j];
-
-					if (wall.hp < 20) {
-						wallImage = wallBroken;
-					} else if (wall.hp < 30) {
-						wallImage = wallTile;
-					} else if (wall.hp < 40) {
-						wallImage = wallTile2;
-					} else if (wall.hp < 50) {
-						wallImage = wallTile3;
-					} else if (wall.hp < 60) {
-						wallImage = wallTile4;
-					}
-
-					ctx.drawImage(wallImage, wall.pos.x*rectHeightRel+canvas.width/2-player.pos.x*rectHeightRel, wall.pos.y*rectHeightRel+canvas.height/2-player.pos.y*rectHeightRel, player.size, player.size);
-					
-					
-				}
-			}
-		}
-	}
-}
-
-function inScreen(x, y, player) {
-	if(play === 3) {
-		return true;
-	} else {
-		if ((x - player.pos.x + player.actualSize) * rectHeightRel < canvas.width * rectHeightRel && (x - player.pos.x - player.actualSize) * rectHeightRel > -canvas.width * rectHeightRel && (y - player.pos.y + player.actualSize) * rectHeightRel < canvas.height * rectHeightRel && (y - player.pos.y - player.actualSize) * rectHeightRel > -canvas.height * rectHeightRel) {
-			return true;
-		}
-	}
-}

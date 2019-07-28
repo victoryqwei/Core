@@ -152,12 +152,11 @@ function spawnPlayer() {
 	cookieGetter();
 	//Play
 	if (play == 0/* && ($("#name").val() == "Bob" || $("#name").val() == "Evan")*/) {
-		play = 1;
         player.name = $("#name").val() || "Player"
 
         var c = hexToRgb($("#color").val());
         player.color = 'rgb(' + c.r + ', ' + c.g + ', ' + c.b + ')';
-        player.power = 50;
+        player.power = 0;
         player.pos = new Vector(Math.floor(Math.random() * arenaSize*2) - arenaSize, Math.floor(Math.random() * arenaSize*2) - arenaSize)
         player.dead = false;
         core.level = 1;
@@ -167,6 +166,8 @@ function spawnPlayer() {
 
         $("#name").hide();
         $("#title").hide();
+        
+        play = 1;
 	}
 }
 

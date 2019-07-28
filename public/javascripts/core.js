@@ -1,5 +1,6 @@
 var lightningAlpha = 1;
 var lightningDraw = 0;
+var explosionRadius = 0;
 
 class Core {
 	constructor(x, y) {
@@ -15,7 +16,7 @@ class Core {
 		this.hp = 100;
 
 		// Core movement
-		this.moveKey = 57;
+		this.moveKey = 52;
 		this.placeMode = false;
 		this.placeToggle = false;
 		this.placeKey = 32;
@@ -29,6 +30,10 @@ class Core {
 		this.generationDelay = 1200;
 		this.cooldown = 0;
 
+		// Power generation rate
+		this.powerSpawnRate = 500;
+		this.powerCooldown = 0;
+
 		// Lightning effects
 		this.lightning = undefined;
 
@@ -38,13 +43,13 @@ class Core {
 
 		this.coreCooldown = 10000;
 		this.cooldownRemain = 0;
+		this.deathAnimation = true;
 	}
 
 	update(player, deltaTime) {
 		// Power generation
 		if(core.exists) {
 			if(core.level === 1) {
-				player.power += this.level*deltaTime/this.generationDelay;
 
 				if (core.hp < 100) {
 					core.hp += this.level*delta/1000*3/5*2
@@ -52,7 +57,6 @@ class Core {
 					core.hp = 100;
 				}
 			} else if(core.level === 2) {
-				player.power += this.level*deltaTime/this.generationDelay;
 
 				if (core.hp < 100) {
 					core.hp += this.level*delta/1000*3/5*2
@@ -60,7 +64,6 @@ class Core {
 					core.hp = 100;
 				}
 			} else if(core.level === 3) {
-				player.power += this.level*deltaTime/this.generationDelay;
 
 				if (core.hp < 100) {
 					core.hp += this.level*delta/1000*3/5*2
@@ -264,7 +267,7 @@ class Core {
 		}
 	}
 
-	drawLightning(player, players, deltaTime) {
+	drawCoreLightning(player, players, deltaTime) {
 		if(player.walls.length > 0 && this.exists && this.level === 3) {
 			var size = canvas.width;
 			var minSegmentHeight = 5;
@@ -279,11 +282,11 @@ class Core {
 		
 			ctx.globalCompositeOperation = "lighter";
 
-			function render(core) {
+			function renderCore(core) {
 				ctx.shadowBlur = 15;
 				ctx.shadowColor = color;
 				ctx.strokeStyle = color;
-				core.lightning = createLightning(currentTarget, currentOrigin);
+				core.lightning = createCoreLightning(currentTarget, currentOrigin);
 				ctx.lineWidth = 5 * rectHeightRel;
 				for (var i = 0; i < core.lightning.length; i++) {
 				  ctx.lineTo(core.lightning[i].x, core.lightning[i].y);
@@ -309,7 +312,7 @@ class Core {
 					
 					ctx.shadowBlur = 30;
 					ctx.shadowColor = 'black';
-					core.lightning = createLightning(currentTarget, currentOrigin);
+					core.lightning = createCoreLightning(currentTarget, currentOrigin);
 					ctx.beginPath();
 					ctx.lineWidth = 5;
 					for (var i = 0; i < core.lightning.length; i++) {
@@ -320,7 +323,7 @@ class Core {
 				}
 			}
 
-			function createLightning(cTarget, cOrigin) {
+			function createCoreLightning(cTarget, cOrigin) {
 				var segmentHeight = groundHeight - cOrigin.y;
 				var lightning = [];
 				lightning.push({x: cOrigin.x, y: cOrigin.y});
@@ -346,7 +349,7 @@ class Core {
 				return lightning;
 			}
 
-			render(this);
+			renderCore(this);
 			ctx.shadowColor = "transparent";
 			ctx.globalCompositeOperation = "source-over";
 			ctx.restore();
@@ -356,8 +359,11 @@ class Core {
 	draw(player, deltaTime) {
 		this.update(player, deltaTime);
 
+		
+
 		// Draw the Core
 		if(this.exists && inScreen(this.pos.x, this.pos.y, player)) {
+			this.deathAnimation = false;
 			
 			if(this.level === 3) {
 				// Draw extra halo
@@ -406,6 +412,51 @@ class Core {
 				ctx.fillRect(this.pos.x*rectHeightRel+canvas.width/2-player.pos.x*rectHeightRel, this.pos.y*rectHeightRel+canvas.height/2-player.pos.y*rectHeightRel + player.size * 2.2, this.hp*rectHeightRel, player.size / 4);
 				ctx.closePath()
 			}
+
+			//Core death
+			
 		}
+		if(animateSurgeFinish) {
+			if(inScreen(coreDeathPos.x, coreDeathPos.y, player)) {
+				animateSurgeFinish = false;
+				ctx.fillStyle = "white"
+				ctx.fillRect(0, 0, canvas.width, canvas.height)
+			}
+		}
+
+
+		if(animateSurgeProgress) {
+
+			explosionRadius += 20;
+			ctx.beginPath();
+			ctx.globalCompositeOperation = "lighter";
+			ctx.fillStyle = '#4286f4';
+			ctx.shadowColor = '#4286f4';
+			ctx.shadowBlur = 15;
+			ctx.globalAlpha = 0.2;
+			ctx.lineWidth=10*rectHeightRel;
+			ctx.arc((coreDeathPos.x+50)*rectHeightRel+canvas.width/2-player.pos.x*rectHeightRel, (coreDeathPos.y+50)*rectHeightRel+canvas.height/2-player.pos.y*rectHeightRel, explosionRadius, 0, 2 * Math.PI, false);
+			ctx.stroke();
+
+			// Reset 
+			ctx.globalAlpha = 1;
+			ctx.globalCompositeOperation = "source-over";
+			ctx.shadowColor = "transparent";
+			ctx.restore();
+			ctx.shadowBlur = 0;
+			ctx.closePath();
+			if(this.level === 1) {
+				ctx.drawImage(coreTile1, coreDeathPos.x*rectHeightRel+canvas.width/2-player.pos.x*rectHeightRel, coreDeathPos.y*rectHeightRel+canvas.height/2-player.pos.y*rectHeightRel, player.size * 2, player.size * 2);
+			} else if(this.level === 2) {
+				ctx.drawImage(coreTile2, coreDeathPos.x*rectHeightRel+canvas.width/2-player.pos.x*rectHeightRel, coreDeathPos.y*rectHeightRel+canvas.height/2-player.pos.y*rectHeightRel, player.size * 2, player.size * 2);
+			} else if(this.level === 3) {
+				ctx.drawImage(coreTile3, coreDeathPos.x*rectHeightRel+canvas.width/2-player.pos.x*rectHeightRel, coreDeathPos.y*rectHeightRel+canvas.height/2-player.pos.y*rectHeightRel, player.size * 2, player.size * 2);
+			}
+		}
+		if(this.exists == false && this.deathAnimation == false) {
+			coreDeathAnimation();
+			coreDeathPos = new Vector(this.pos.x, this.pos.y)
+			this.deathAnimation = true;
+		}				
 	}
 }

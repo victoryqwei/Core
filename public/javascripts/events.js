@@ -19,13 +19,50 @@ socket.on('refresh', function () {
 })
 
 socket.on('newPlayerBullet', function (data) {
-	console.log(data);
 })
 
 var players = [];
+var playerBuffers = [];
+var powerBalls = [];
 
-socket.on('arenaSpot', function (data) {
-	arenaDeadSpots = data;
+socket.on('powerBall', function (data) {
+	if (powerBalls) {
+		// Update new balls and existing balls
+		for (var i = 0; i < data.length; i++) {
+			var exists = false;
+			if (powerBalls) {
+				for (var j = 0; j < powerBalls.length; j++) {
+					if (powerBalls[j].id == data[i].id) {
+						powerBalls[j].pos = data[i].pos;
+						powerBalls[j].mass = data[i].mass;
+
+						powerBalls[j].positionBuffer.push([+new Date(), new Vector(data[i].pos.x, data[i].pos.y)])
+
+						exists = true;
+					}
+				}
+				if (!exists) {
+					powerBalls.push(data[i]);
+				}
+			}
+		}
+		// Remove used balls
+		for (var i = 0; i < powerBalls.length; i++) {
+			var exists = false;
+			for (var j = 0; j < data.length; j++) {
+				if (powerBalls[i].id == data[j].id) {
+					exists = true;
+				}
+			}
+			if (!exists) {
+				powerBalls[i] = undefined;
+			}
+		}
+
+		powerBalls = powerBalls.filter(function (el) {
+		  	return el != undefined;
+		});
+	}
 })
 
 // Update data on 'playerData'
@@ -66,7 +103,7 @@ socket.on('playerData', function (sockets) {
 			players.push(sockets[i]);
 		}
 	}
-	// Update player positions
+	// Update other player positions
 	if(players && playerBuffers) {
 		for (var i = 0; i < players.length; i++) {
 			// Add player position to the buffer
@@ -93,8 +130,12 @@ socket.on('playerData', function (sockets) {
 	// Update client player
 	if(players) {
 		for (var i = 0; i < players.length; i++) {
-			if (players[i].id === socket.id) {
+			if (players[i].id === socket.id && isonfocus) {
 				player.updatePlayer(players[i]);
+			}
+		}
+		for (var i = 0; i < players.length; i++) {
+			if (players[i].id === socket.id) {
 				players.splice(i, 1);
 			}
 		}
@@ -165,8 +206,16 @@ socket.on('killText', function (killedPlayer) {
 
 })
 
+socket.on('coreDeath', function (playerCore) {
+	for (var j = 0; j < players.length; j++) {
+		if(players[j].id == playerCore) {
+			coreDeathPos = new Vector(players[j].core.pos.x, players[j].core.pos.y)
+			coreDeathAnimation();
+		}
+	}
+})
+
 socket.on('kill', function (killedPlayer) {
-	console.log("work")
 
 	//New kill clears timouts
 	clearTimeout(killTextTime);
@@ -222,6 +271,7 @@ socket.on('hit', function (data) {
 		if (!core.exists) {
 			player.hp -= data.damage;
 			if (player.hp <= 0) {
+				play = 0;
 
 				// Core doesn't exist
 				resetPlayer(player, data)
@@ -312,7 +362,6 @@ function resetPlayer(player, data) {
 	finalKill = false; 
 	player.killCount = 0;
 
-	play = 0;
 	player.pos = new Vector(Math.floor(Math.random() * arenaSize*2) - arenaSize, Math.floor(Math.random() * arenaSize*2) - arenaSize)
 	player.hp = player.maxHP;
 	$("#name").show();

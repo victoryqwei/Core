@@ -194,14 +194,13 @@ module.exports = class Player {
 	static checkCollision(players, player) {
 		for (var j = 0; j < players.length; j++) {
 			for (var i = 0; i < players[j].walls.length; i++) {
-				var wall = players[j].walls[i].pos
-				if (player.pos.x+player.actualSize/2*5/6 > wall.x && player.pos.x-player.actualSize/2*5/6 < wall.x+player.actualSize && player.pos.y+player.actualSize/2*5/6 > wall.y && player.pos.y-player.actualSize/2*5/6 < wall.y+player.actualSize) {
-					console.log("yes")
+				var wall = players[j].walls[i].pos;
+				if (player.id != players[j].id && player.pos.x+player.actualSize/2*5/6 > wall.x && player.pos.x-player.actualSize/2*5/6 < wall.x+player.actualSize && player.pos.y+player.actualSize/2*5/6 > wall.y && player.pos.y-player.actualSize/2*5/6 < wall.y+player.actualSize) {
 					return true;
 				}
 			}
 
-			if (players[j].core && players[j].core.exists && player.pos.x+player.actualSize/2*5/6 > players[j].core.pos.x && player.pos.x-player.actualSize/2*5/6 < players[j].core.pos.x + players[j].core.actualSize && player.pos.y+player.actualSize/2*5/6 > players[j].core.pos.y && player.pos.y-player.actualSize/2*5/6 < players[j].core.pos.y + players[j].core.actualSize) {
+			if (player.id != players[j].id && players[j].core && players[j].core.exists && player.pos.x+player.actualSize/2*5/6 > players[j].core.pos.x && player.pos.x-player.actualSize/2*5/6 < players[j].core.pos.x + players[j].core.actualSize && player.pos.y+player.actualSize/2*5/6 > players[j].core.pos.y && player.pos.y-player.actualSize/2*5/6 < players[j].core.pos.y + players[j].core.actualSize) {
 				return true;
 			}
 		}

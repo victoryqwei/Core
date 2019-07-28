@@ -8,11 +8,13 @@ class Player {
 		// Size
 		var baseScreenHeight = 939;
 		this.actualSize = 50;
+		this.mass = 50;
 		
 		// World and Client position
 		this.pos = new Vector(0, 0);
 		this.positionBuffer = [];
 		this.tick = 0;
+		this.inputStamps = [];
 
 		// Angle (Direction of the player)
 		this.angle = 0;
@@ -72,15 +74,19 @@ class Player {
 
 		// Actual delta?
 		this.actual = +new Date();
-		this.then = +new Date();
 
+		// Player team
+		this.team = undefined;
 	}
 	move(input, deltaTime, players) {
+		if(this.hp > (this.maxHP + 1)) {
+			location.reload(true);
+		}
 		this.size = this.actualSize * rectHeightRel;
 
 		// Draw the projectiles and move the projetiles
 		for (var i = 0; i < this.projectiles.length; i++) {
-			this.projectiles[i].move(deltaTime);
+			this.projectiles[i].move(deltaTime, this.class);
 
 			if (this.projectiles[i].timeAlive > this.projectiles[i].timeLimit) {
 				this.projectiles[i] = undefined;
@@ -129,14 +135,21 @@ class Player {
 			direction.normalize();
 			direction.mult(this.speed / (averageFps) * 10);
 
-			if (Math.pow(direction.x, 2) > 0 || Math.pow(direction.y, 2) > 0) {
-				this.positionBuffer = [];
+			var noMovement = true;
+			for (var i = 0; i < this.inputStamps.length; i++) {
+				if (this.inputStamps[i].input.length > 0) {
+					noMovement = false;
+				}
+			}
+
+			if ((Math.pow(direction.x, 2) > 0 || Math.pow(direction.y, 2) > 0)) { // If input is moving
+				this.positionBuffer.shift();
 				player.moved = true;
-			} else {
+			} else { // If input is not moving
 				player.moved = false;
 			}
 
-			this.pos.x += direction.x
+			this.pos.x += direction.x;
 			if (this.checkCollision(players)) {
 				this.pos.x -= direction.x;
 			}
@@ -144,6 +157,17 @@ class Player {
 			if (this.checkCollision(players)) {
 				this.pos.y += direction.y;
 			}
+
+			for (var j = 0; j < powerBalls.length; j++) {
+				var distance = Math.sqrt(Math.pow(powerBalls[j].pos.x - this.pos.x, 2) + Math.pow(powerBalls[j].pos.y - this.pos.y, 2))
+				if (distance < 20) {
+					powerBalls[j] = undefined;
+				}
+			}
+			powerBalls = powerBalls.filter(function (el) {
+			  	return el != undefined;
+			});
+			
 		}
 
 		// Spectator movement
@@ -196,7 +220,7 @@ class Player {
 	hitDetection(players, socket, radius) {
 		for (var i = 0; i < this.projectiles.length; i++) {
 
-			// PLayer hit detection
+			// Player hit detection
 			for (var j = 0; j < players.length; j++) {
 				if (this.projectiles[i] && !players[j].dead) {
 					var playerPos = new Vector(players[j].pos.x, players[j].pos.y);
@@ -286,9 +310,6 @@ class Player {
 									type: "wall",
 									damage: this.damage
 								});
-
-	
-
 							}
 						}
 					}
@@ -313,8 +334,6 @@ class Player {
 									this.projectiles[i].delete = true;
 								}
 
-								console.log('HIT')
-
 								// Damage the players wall
 								socket.emit('detectHit', {
 									moduleId: players[j].modules[k].id,
@@ -322,9 +341,6 @@ class Player {
 									type: "module",
 									damage: this.damage
 								});
-
-	
-
 							}
 						}
 					}
@@ -375,7 +391,7 @@ class Player {
 		} else {
 			this.cooldown -= deltaTime
 		}
-
+/*
 		// UPDATE SCORE - TO BE PUT ON THE SERVER
 		//Time increse
 		this.score += 0.05*delta/1000*3/5*2;
@@ -393,7 +409,7 @@ class Player {
 		this.score += 0.005*(this.killCount)*delta/1000*3/5*2;
 
 		//Increase score based on power
-		this.score += 0.001*(this.power)*delta/1000*3/5*2;
+		this.score += 0.001*(this.power)*delta/1000*3/5*2;*/
 	}
 
 	// CLIENT NOT ON SERVER --------------------------------------------------------
@@ -403,6 +419,7 @@ class Player {
 			pos: this.pos,
 			positionBuffer: this.positionBuffer,
 			size: this.size,
+			actualSize: this.actualSize,
 			speed: this.speed,
 			name: this.name,
 			color: this.color,
@@ -424,7 +441,8 @@ class Player {
 			barrelLength: this.barrelLength,
 			modules: this.modules,
 			moved: true,
-			class: this.class
+			class: this.class,
+			mass: this.mass
 		}
 		socket.emit('update', playerData);
 
@@ -434,6 +452,8 @@ class Player {
 			delta: deltaTime,
 			time: Date.now()
 		}
+
+		this.inputStamps.push(data);
 
 		socket.emit('input', data);
 	}
@@ -452,6 +472,50 @@ class Player {
 
 		// Interpolate the current player
 		player.positionBuffer.push([+new Date(), new Vector(data.pos.x, data.pos.y)])
+
+		// Remove authoritated input stamps from the player
+		for (var i = 0; i < this.inputStamps.length; i++) {
+			if (data.lastTick > this.inputStamps[i].time) {
+				this.inputStamps[i] = undefined;
+			}
+		}
+		this.inputStamps = this.inputStamps.filter(function (el) {
+		  return el != undefined;
+		});
+		
+		// Add player power according to balls
+		if (Number.isInteger(data.addPower)) {
+			player.power += data.addPower;
+		}
+
+		// Update player data based on the authorative server
+		if (data.class.name == "soldier") {
+			player.cooldownDelay = 300;
+			player.damage = 10;
+			player.speed = 22;
+			player.maxHP = 50;
+		} else if (data.class.name == "sniper") {
+			player.cooldownDelay = 1000;
+			player.damage = 25;
+			player.barrelSize = 20;
+			player.speed = 16;
+			player.maxHP = 50;
+		} else if (data.class.name == "heavy") {
+			player.cooldownDelay = 30;
+			player.damage = 2;
+			player.barrelSize = 30;
+			player.speed = 20;
+			player.maxHP = 50;
+		} else if (data.class.name == "cannoneer") {
+			player.cooldownDelay = 800;
+			player.damage = 10;
+			player.barrelSize = 60;
+			player.speed = 15;
+			player.maxHP = 80;
+		}
+		if (data.team) {
+			this.team = data.team;
+		}
 	}
 	clearPlaceMode(tileSelect0, tileSelect1, tileSelect2) {
 		tileSelect0.placeMode = tileSelect1.placeMode = tileSelect2.placeMode = false;
@@ -477,68 +541,83 @@ class Player {
 				this.projectiles[i].draw();
 			}
 		}
-		
-		// Draw hp
-		ctx.beginPath();
-		ctx.strokeStyle = "black";
-		ctx.lineWidth = 12 * rectHeightRel;
-		ctx.lineCap = "round";
-		ctx.moveTo(this.pos.x+canvas.width/2-this.pos.x-this.size*3/4, this.pos.y+canvas.height/2-this.pos.y + this.size*3/4)
-		ctx.lineTo(this.pos.x+canvas.width/2-this.pos.x-this.size*3/4+(this.hp/this.maxHP*75)*rectHeightRel, this.pos.y+canvas.height/2-this.pos.y + this.size*3/4)
-		ctx.stroke();
-		ctx.strokeStyle = this.color;
-		ctx.lineWidth = 10 * rectHeightRel;
-		ctx.stroke();
-		ctx.lineCap = "butt";
 
-		// Draw the cannon
-		var vector = new Vector(canvas.width/2, canvas.height/2);
-		ctx.beginPath();
-		ctx.strokeStyle = "grey";
-		ctx.lineWidth = this.barrelSize/2*rectHeightRel
-		ctx.moveTo(vector.x, vector.y);
-		vector.sub(mouse);
-		vector.normalize();
-		vector.mult(-this.barrelLength*rectHeightRel);
-		this.angle = vector.copy();
-		ctx.lineTo(vector.x+canvas.width/2, vector.y+canvas.height/2);
-		ctx.stroke();
-		ctx.closePath();
-
-		// Draw the body
-		ctx.beginPath();
-		ctx.fillStyle = 'black';
-		ctx.arc(canvas.width/2, canvas.height/2, this.size/2, 0, 2 * Math.PI, false);
-		ctx.fill();
-		ctx.closePath()
-		ctx.beginPath();
-		ctx.fillStyle = this.color;
-		ctx.arc(canvas.width/2, canvas.height/2, this.size/2.3, 0, 2 * Math.PI, false);
-		ctx.fill();
-		ctx.closePath()
-
-		//Draw the text
-		ctx.beginPath();
-    	ctx.font = "13px Pier";
-    	ctx.fillStyle = "Black";
-    	ctx.textAlign="center";
-    	ctx.textBaseline = "bottom";
-		ctx.fillText(this.name, this.pos.x+canvas.width/2-this.pos.x, this.pos.y+canvas.height/2-this.pos.y - this.size/2);
-		ctx.closePath()
-		//Reset text align
-		ctx.textAlign="start"; 
-
-		// Draw messages
-		this.drawMessages();
-
-		// Draw server
-		if (this.server && advancedOptions) {
+		if (this.server) {
+			var clientX = canvas.width/2/*+(this.pos.x-this.server.pos.x)*rectHeightRel/5*/;
+			var clientY = canvas.height/2/*+(this.pos.y-this.server.pos.y)*rectHeightRel/5*/;
+			
+			// Draw hp
 			ctx.beginPath();
-			ctx.lineWidth = 2*rectHeightRel;
-			ctx.strokeStyle = player.color;
-			ctx.arc(this.server.pos.x*rectHeightRel+canvas.width/2-player.pos.x*rectHeightRel, this.server.pos.y*rectHeightRel+canvas.height/2-player.pos.y*rectHeightRel, player.size/2, 0, 2 * Math.PI, false);
+			ctx.strokeStyle = "black";
+			ctx.lineWidth = 12 * rectHeightRel;
+			ctx.lineCap = "round";
+			ctx.moveTo(this.pos.x+clientX-this.pos.x-this.size*3/4, this.pos.y+clientY-this.pos.y + this.size*3/4)
+			ctx.lineTo(this.pos.x+clientX-this.pos.x-this.size*3/4+(this.hp/this.maxHP*75)*rectHeightRel, this.pos.y+clientY-this.pos.y + this.size*3/4)
 			ctx.stroke();
+			if (this.team) {
+				ctx.strokeStyle = this.team;
+			} else {
+				ctx.strokeStyle = this.color;
+			}
+			
+			ctx.lineWidth = 10 * rectHeightRel;
+			ctx.stroke();
+			ctx.lineCap = "butt";
+
+			// Draw the cannon
+			var vector = new Vector(clientX, clientY);
+			ctx.beginPath();
+			ctx.strokeStyle = "grey";
+			ctx.lineWidth = this.barrelSize/2*rectHeightRel
+			ctx.moveTo(vector.x, vector.y);
+			vector.sub(mouse);
+			vector.normalize();
+			vector.mult(-this.barrelLength*rectHeightRel);
+			this.angle = vector.copy();
+			ctx.lineTo(vector.x+clientX, vector.y+clientY);
+			ctx.stroke();
+			ctx.closePath();
+
+			// Draw the body
+			ctx.beginPath();
+			ctx.fillStyle = 'black';
+			ctx.arc(clientX, clientY, this.size/2, 0, 2 * Math.PI, false);
+			ctx.fill();
 			ctx.closePath()
+			ctx.beginPath();
+			if (this.team) {
+				ctx.fillStyle = this.team;
+			} else {
+				ctx.fillStyle = this.color;
+			}
+			
+			ctx.arc(clientX, clientY, this.size/2.3, 0, 2 * Math.PI, false);
+			ctx.fill();
+			ctx.closePath()
+
+			//Draw the text
+			ctx.beginPath();
+	    	ctx.font = "13px Pier";
+	    	ctx.fillStyle = "Black";
+	    	ctx.textAlign="center";
+	    	ctx.textBaseline = "bottom";
+			ctx.fillText(this.name, this.pos.x+clientX-this.pos.x, this.pos.y+clientY-this.pos.y - this.size/2);
+			ctx.closePath()
+			//Reset text align
+			ctx.textAlign="start"; 
+
+			// Draw messages
+			this.drawMessages();
+
+			// Draw server
+			if (advancedOptions) {
+				ctx.beginPath();
+				ctx.lineWidth = 2*rectHeightRel;
+				ctx.strokeStyle = player.color;
+				ctx.arc(this.server.pos.x*rectHeightRel+clientX-player.pos.x*rectHeightRel, this.server.pos.y*rectHeightRel+clientY-player.pos.y*rectHeightRel, player.size/2, 0, 2 * Math.PI, false);
+				ctx.stroke();
+				ctx.closePath()
+			}
 		}
 	}
 	drawMessages() {
@@ -593,7 +672,11 @@ class Player {
 		// World postions and access area
 		var obstruction = false;
 		var distance = new Vector((mouse.x-canvas.width/2), (mouse.y-canvas.height/2))
-		var withinArena = world.x > -arenaSize && world.x < arenaSize && world.y > -arenaSize && world.y < arenaSize;
+		if(imageName == coreTile1) {
+			var withinArena = world.x > (-arenaSize-50) && world.x < (arenaSize-50) && world.y > (-arenaSize-50) && world.y < (arenaSize-50);
+		} else {
+			var withinArena = world.x > (-arenaSize-50) && world.x < arenaSize && world.y > (-arenaSize-50) && world.y < arenaSize;
+		}
 
 		if(imageName == wallTile || imageName == wallTile2 || imageName == wallTile3 || imageName == wallTile4) {
 			obstruction = false;
@@ -682,6 +765,10 @@ class Player {
 		}
 
 		if(!withinArena) {
+			obstruction = true;
+		}
+
+		if(distance.getMag() > player.size*player.accessRange) {
 			obstruction = true;
 		}
 

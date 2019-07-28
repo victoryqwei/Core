@@ -15,10 +15,11 @@ var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var readline = require('readline');
 var fs = require('fs');
-var Player = require('./player.js')
-var Vector = require('./vector.js')
+var Player = require('./player.js');
+var Vector = require('./vector.js');
 var io = require('socket.io')(server);
-var tools = require('./tools.js')
+var tools = require('./tools.js');
+var util = require('util');
 
 //Create port
 server.listen(3001, function () {
@@ -57,9 +58,13 @@ rl.on('line', (input) => {
 var lobby = [];
 
 // Dynamic arena size
-var arenaSize = 2000;
+var arenaSize = 1500;
+var powerSpawnRate = 0;
 
-var deadArea = [];
+// Gamemode
+var gamemode = 0;
+
+var powerBalls = [];
 
 // Server-client connection architecture
 
@@ -101,6 +106,27 @@ io.on('connect', function(socket) {
 				data.id = socket.id;
 				player = data;
 				player.pos = new Vector(data.pos.x,data.pos.y);
+
+				if (gamemode === 1) {
+					var teams = {
+						red: 0,
+						blue: 0
+					}
+					for (var i = 0; i < lobby.length; i++) {
+						if (lobby[i].team == "red") {
+							teams.red++
+						} else {
+							teams.blue++
+						}
+					}
+
+					if (teams.red > teams.blue) {
+						player.team = "red"
+					} else if (teams.red <= teams.blue) {
+						player.team = "blue"
+					}
+				}
+					
 				lobby.push(player);
 			}
 
@@ -123,7 +149,7 @@ io.on('connect', function(socket) {
 			rawInput.push(data);
 		}
 	})
-	// Process raw input and move the player on the server side
+	// Process raw input and move the player position on the server side
 	setInterval(function () {
 		if (player && !banned) {
 			
@@ -192,6 +218,9 @@ io.on('connect', function(socket) {
 					if (Player.checkCollision(lobby, player)) {
 						player.pos.y += direction.y;
 					}
+
+					// Check off the time stamp as done
+					player.lastTick = rawInput[i].time;
 				}
 			}
 			rawInput = [];
@@ -205,16 +234,27 @@ io.on('connect', function(socket) {
 			socket.emit('latency', playerData.time);
 
 			// Save data
-			var pos = player.pos;
 			var hp = player.hp;
 			var moved = player.moved;
+			var lastTick = player.lastTick;
+			var powerSpawnRate = player.core.powerSpawnRate;
+			var powerCooldown = player.core.powerCooldown;
+			var banned = player.banned;
+			var team = player.team;
 
 			// Update data
 			player = playerData;
 
-			player.pos = pos;
 			player.hp = hp;
 			player.moved = moved;
+			player.lastTick = lastTick;
+
+			player.core.powerSpawnRate = powerSpawnRate;
+			player.core.powerCooldown = powerCooldown;
+
+			player.banned = banned;
+
+			player.team = team;
 			
 			// Update the player
 
@@ -237,6 +277,13 @@ io.on('connect', function(socket) {
 						// FINAL KILL - NO CORE
 						lobby[i].hp -= data.damage;
 						if (lobby[i].hp <= 0) {
+							lobby[i].modules = [];
+							// Release player's power in the form of ball
+							for (var j = 0; j < Math.floor(lobby[i].power); j++) {
+								var newBall = new Power(lobby[i].pos.x + 25, lobby[i].pos.y + 25, 1);
+								powerBalls.push(newBall);	
+							}
+
 							lobby[i].hp = lobby[i].maxHP;
 							lobby[i].pos = new Vector(Math.floor(Math.random() * arenaSize*2) - arenaSize, Math.floor(Math.random() * arenaSize*2) - arenaSize);
 							lobby[i].core.exists = false;
@@ -254,9 +301,15 @@ io.on('connect', function(socket) {
 						// KILL WITH CORE
 						lobby[i].hp -= data.damage;
 						if (lobby[i].hp <= 0) {
+							for (var j = 0; j < 25; j++) {
+								var newBall = new Power(lobby[i].pos.x + 25, lobby[i].pos.y + 25, 1);
+								powerBalls.push(newBall);	
+							}
+
+							// Reset player to core position
 							lobby[i].dead = true;
 							lobby[i].hp = lobby[i].maxHP;
-							lobby[i].pos = {
+							lobby[i].pos = { // Move the player so it won't collect the dead power
 								x: lobby[i].core.pos.x + lobby[i].core.actualSize/2,
 								y: lobby[i].core.pos.y + lobby[i].core.actualSize/2
 							}
@@ -272,7 +325,12 @@ io.on('connect', function(socket) {
 					if (lobby[i].id == data.id) {
 						lobby[i].core.hp -= data.damage * 1/lobby[i].core.level;
 						if (lobby[i].core.hp <= 0) {
+							for (var j = 0; j < 25; j++) {
+								var newBall = new Power(lobby[i].core.pos.x + 50, lobby[i].core.pos.y + 50, 1);
+								powerBalls.push(newBall);	
+							}
 							lobby[i].core.exists = false;
+							io.emit('coreDeath', lobby[i].id);
 						}
 					}
 				}
@@ -333,62 +391,174 @@ io.on('connect', function(socket) {
 	});
 });
 
+class Power {
+	constructor(x, y, power) {
+		this.id = randomString(5);
+
+		this.pos = new Vector(x, y)
+		this.positionBuffer = [];
+
+		this.velocity = new Vector(0,0);
+		this.acceleration = new Vector(0,0);
+	    
+	    this.power = power;
+	    this.mass = 1+(power-1)/3;
+	}
+}
+
+function constrain(value, a, b) {
+	if (value < a) {
+		return a;
+	} else if (value > b) {
+		return b;
+	} else {
+		return value
+	}
+}
+
+function random(max, min) {
+	return Math.random() * (max - min) + min;
+}
+
+function randomString(length) {
+    var chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghiklmnopqrstuvwxyz'.split('');
+
+    if (! length) {
+        length = Math.floor(Math.random() * chars.length);
+    }
+
+    var str = '';
+    for (var i = 0; i < length; i++) {
+        str += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return str;
+}
+
+function powerUpdate() {
+	//Player sucking
+	for (var i = 0; i < powerBalls.length; i++) {
+		for (var j = 0; j < lobby.length; j++) {
+			var distance = Math.sqrt(Math.pow(powerBalls[i].pos.x - lobby[j].pos.x, 2) + Math.pow(powerBalls[i].pos.y - lobby[j].pos.y, 2))
+			if (distance < 150+powerBalls[i].mass) {
+				var target = new Vector(lobby[j].pos.x, lobby[j].pos.y);
+				target.sub(powerBalls[i].pos);
+				target.normalize();
+				target.mult(1000/distance);
+				powerBalls[i].pos.add(target);
+			}
+			if (distance < 20) {
+				if (lobby[j].addPower) {
+					lobby[j].addPower += powerBalls[i].power;
+				} else {
+					lobby[j].addPower = powerBalls[i].power;
+				}
+				powerBalls[i].dead = true;
+			}
+		}
+		if (powerBalls[i].dead) {
+			powerBalls[i] = undefined;
+		}
+	}
+	powerBalls = powerBalls.filter(function (el) {
+	  return el != undefined;
+	});
+
+	// Power balls repelling and merging force away from each other
+	for (var i = 0; i < powerBalls.length; i++) {
+		for (var j = 0; j < powerBalls.length; j++) {
+			if (i != j) {
+				var distance = Math.sqrt(Math.pow(powerBalls[i].pos.x - powerBalls[j].pos.x, 2) + Math.pow(powerBalls[i].pos.y - powerBalls[j].pos.y, 2))
+				if (distance < powerBalls[i].mass*5+powerBalls[j].mass*5 && !powerBalls[i].dead&&!powerBalls[j].dead) {
+					var randomMerge = Math.random()*30;
+					if (randomMerge < 1/* && (powerBalls[i].mass + powerBalls[j].mass/5 < 20)*/) { // Merge into larger one
+						powerBalls[i].mass += powerBalls[j].mass/5;
+						powerBalls[i].power += powerBalls[j].power;
+						powerBalls[j].dead = true;
+					} else { // Repel power balls
+						var target = new Vector(powerBalls[j].pos.x, powerBalls[j].pos.y);
+						target.sub(powerBalls[i].pos);
+						target.normalize();
+						target.mult(-1);
+						powerBalls[i].pos.add(target);
+					}
+				}
+			}
+		}
+	}
+	// Remove used power balls
+	for (var i = 0; i < powerBalls.length; i++) {
+		if (powerBalls[i].dead) {
+			powerBalls[i] = undefined;
+		}
+	}
+	powerBalls = powerBalls.filter(function (el) {
+	  return el != undefined;
+	});
+
+	//Spawn power balls at players cores
+	for (var i = 0; i < lobby.length; i++) {
+		if(lobby[i].core.exists && lobby[i].core.pos.x) {
+			lobby[i].core.powerSpawnRate = 500/lobby[i].core.level;
+			if(lobby[i].core.level == 1 && lobby[i].core.powerCooldown >= lobby[i].core.powerSpawnRate) {
+				corePowerBall = new Power(lobby[i].core.pos.x + 50, lobby[i].core.pos.y + 50, 1);
+				powerBalls.push(corePowerBall);
+				lobby[i].core.powerCooldown = 0;
+			} else if(lobby[i].core.level == 2 && lobby[i].core.powerCooldown >= lobby[i].core.powerSpawnRate) {
+				corePowerBall = new Power(lobby[i].core.pos.x + 50, lobby[i].core.pos.y + 50, 1);
+				powerBalls.push(corePowerBall);
+				lobby[i].core.powerCooldown = 0;
+			} else if(lobby[i].core.level == 3 && lobby[i].core.powerCooldown >= lobby[i].core.powerSpawnRate) {
+				corePowerBall = new Power(lobby[i].core.pos.x + 50, lobby[i].core.pos.y + 50, 1);
+				powerBalls.push(corePowerBall);
+				lobby[i].core.powerCooldown = 0;
+			}
+			lobby[i].core.powerCooldown += 100;
+		}
+	}
+
+	//Move power balls in random direction
+	for (var i = 0; i < powerBalls.length; i++) {
+		powerBalls[i].pos.x += Math.random()*4-2;
+		powerBalls[i].pos.y += Math.random()*4-2;
+		if(powerBalls[i].pos.x > arenaSize || powerBalls[i].pos.x < -arenaSize || powerBalls[i].pos.y > arenaSize || powerBalls[i].pos.y < -arenaSize) {
+			powerBalls.splice(i, 1)
+		}
+	}
+
+	//Randomly generate power balls around the map
+	if(Math.floor(Math.random() * 50) < (arenaSize / 500)) {
+		if(powerBalls.length < 300) {
+			var newBall = new Power(Math.floor(Math.random() * arenaSize * 2)-arenaSize, Math.floor(Math.random() * arenaSize * 2)-arenaSize, 2);
+			powerBalls.push(newBall);	
+		}
+	}
+	io.emit('powerBall', powerBalls)
+}
+
+function moduleUpdate() {
+	for (var i = 0; i < lobby.length; i++) {
+		for (var j = 0; j < lobby[i].modules.length; j++) {
+			if(lobby[i].modules.length > 0) {
+				var lobbyDistance = new Vector(lobby[i].pos.x, lobby[i].pos.y)
+				lobbyDistance.sub(new Vector(lobby[i].modules[j].pos.x, lobby[i].modules[j].pos.y));
+				if (lobbyDistance.getMag() < 300) {
+					if(lobby[i].hp <= lobby[i].maxHP && lobby[i].power >= 0.008) {
+						lobby[i].hp += 0.8;
+						lobby[i].power -= 0.08;
+					}
+				}
+			}
+		}
+	}
+}
+
 setInterval(function () {
+	// Update power physics
+	powerUpdate();
+	// Update module regen
+	moduleUpdate();
+	// Send all player data to everyone
 	io.emit('playerData', lobby)
-
-	for (var i = 0; i < deadArea.length; i++) {
-		var deadMove = Math.floor(Math.random() * 6);
-		if(deadMove === 0) {
-			deadArea[i].x += Math.random() * 8;
-		} else if(deadMove === 1) {
-			deadArea[i].y += Math.random() * 8;
-		} else if(deadMove === 2) {
-			deadArea[i].x -= Math.random() * 8;
-		} else if(deadMove === 3) {
-			deadArea[i].y -= Math.random() * 8;
-		} else if(deadMove === 4) {
-			deadArea[i].x -= Math.random() * 8;
-			deadArea[i].Y -= Math.random() * 8;
-		} else if(deadMove === 5) {
-			deadArea[i].X += Math.random() * 8;
-			deadArea[i].y += Math.random() * 8;
-		}
-	}
-
-	
-	if(1 == 2) {
-		var deadSelect = Math.floor(Math.random() * 4);
-		if(deadSelect === 0) {
-			var deadpos = new Vector(-Math.floor(Math.random() * arenaSize/50) * 50, Math.floor(Math.random() * arenaSize/50) * 50);
-		} else if(deadSelect === 1) {
-			var deadpos = new Vector(Math.floor(Math.random() * arenaSize/50) * 50, -Math.floor(Math.random() * arenaSize/50) * 50);
-		} else if(deadSelect === 2) {
-			var deadpos = new Vector(-Math.floor(Math.random() * arenaSize/50) * 50, -Math.floor(Math.random() * arenaSize/50) * 50);
-		} else if(deadSelect === 3) {
-			var deadpos = new Vector(Math.floor(Math.random() * arenaSize/50) * 50, Math.floor(Math.random() * arenaSize/50) * 50);
-		}
-		
-		deadArea.push(deadpos);
-		while((Math.random() * 100 < 70)) {
-			var deadSelect = Math.floor(Math.random() * 6);
-			if(deadSelect === 0) {
-				deadpos = new Vector(deadpos.x + 50, deadpos.y)
-			} else if(deadSelect === 1) {
-				deadpos = new Vector(deadpos.x, deadpos.y + 50)
-			} else if(deadSelect === 2) {
-				deadpos = new Vector(deadpos.x - 50, deadpos.y)
-			} else if(deadSelect === 3) {
-				deadpos = new Vector(deadpos.x, deadpos.y - 50)
-			} else if(deadSelect === 4) {
-				deadpos = new Vector(deadpos.x + 50, deadpos.y + 50)
-			} else if(deadSelect === 5) {
-				deadpos = new Vector(deadpos.x - 50, deadpos.y - 50)
-			} 
-			deadArea.push(deadpos);
-		}
-			
-	}
-	io.emit('arenaSpot', deadArea)
 }, 100);
 
 module.exports = app;

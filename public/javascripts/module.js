@@ -71,9 +71,9 @@ class Module {
 				var playerDistance = new Vector(player.pos.x, player.pos.y)
 				playerDistance.sub(new Vector(player.modules[i].pos.x, player.modules[i].pos.y));
 				if (playerDistance.getMag() < this.regenRadius) {
-					if(player.hp <= player.maxHP && player.power >= 0.008) {
-						player.hp += 0.08;
-						player.power -= 0.008;
+					if(player.hp <= player.maxHP && player.power >= 0.08) {
+						player.hp += 0.8;
+						player.power -= 0.08;
 						ctx.beginPath();
 						ctx.globalAlpha = 0.8;
 						ctx.drawImage(regenCover1, player.pos.x*rectHeightRel-player.actualSize/2*rectHeightRel+canvas.width/2-player.pos.x*rectHeightRel, player.pos.y*rectHeightRel-player.actualSize/2*rectHeightRel+canvas.height/2-player.pos.y*rectHeightRel, player.size, player.size);
@@ -86,9 +86,9 @@ class Module {
 					var wallDistance = new Vector(player.walls[j].pos.x, player.walls[j].pos.y)
 					wallDistance.sub(new Vector(player.modules[i].pos.x, player.modules[i].pos.y));
 					if (wallDistance.getMag() < this.regenRadius) {
-						if(player.walls[j].hp < 59 && player.power >= 0.008) {
-							player.walls[j].hp += 0.08;
-							player.power -= 0.008;
+						if(player.walls[j].hp <= wallLevels[4].hp && player.power >= 0.08) {
+							player.walls[j].hp += 0.3;
+							player.power -= 0.08;
 							ctx.beginPath();
 							ctx.globalAlpha = 0.8;
 							ctx.drawImage(regenCover1, player.walls[j].pos.x*rectHeightRel+canvas.width/2-player.pos.x*rectHeightRel, player.walls[j].pos.y*rectHeightRel+canvas.height/2-player.pos.y*rectHeightRel, player.size, player.size);
@@ -120,7 +120,7 @@ class Module {
 
 			//Draw preview UI
 			previewUI = true;
-			drawPreview(regenTile1, 'Regeneration Module', 'Provides a radius to heal players and walls.', 50)
+			drawPreview(regenTile1, 'Regeneration Module', 'Provides a radius to heal players and walls.', 200)
 			
 			// Reset data
 			this.hp = 50;
@@ -129,8 +129,8 @@ class Module {
 			player.drawPlaceMode(regenTile1, player.size, true);
 
 			// When pressed move core position
-			if(place === true && !player.drawPlaceMode(regenTile1, player.size, false) && play === 1 && player.power >= 50) {
-				player.power -= 50;
+			if(place === true && !player.drawPlaceMode(regenTile1, player.size, false) && play === 1 && player.power >= 200) {
+				player.power -= 200;
 				var newRegen = {
 					pos: new Vector((Math.ceil(((mouse.x-canvas.width/2)/rectHeightRel+player.pos.x) / 50) * 50)-50, (Math.ceil(((mouse.y-canvas.height/2)/rectHeightRel+player.pos.y) / 50) * 50)-50),
 					hp: this.hp,

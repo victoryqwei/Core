@@ -8,7 +8,7 @@ class Ability {
 		this.pos = new Vector(Infinity, Infinity);
 
 		//Ability movement
-		this.moveKey = 56;
+		this.moveKey = 51;
 		this.placeMode = false;
 		this.placeToggle = false;
 		this.placeKey = 32;
@@ -81,53 +81,91 @@ class Ability {
 		}
 	}
 
-	drawUI() {
+	drawUI(player) {
 		if(this.interface) {
+			//World pos
 			var world = new Vector(this.pos.x*rectHeightRel+canvas.width/2-player.pos.x*rectHeightRel, this.pos.y*rectHeightRel+canvas.height/2-player.pos.y*rectHeightRel)
 
-			var coreUIoffset = 10 * relativeHeight;
+			//Define
+			var abilityUIoffset = 10 * relativeHeight;
 			var fullHP = 100;
-			var fullWidth = 350 * relativeHeight;
+			var fullWidth = 150 * relativeHeight;
 			var pixelPerHP = fullWidth / fullHP;
 			var healthWidth = pixelPerHP * this.hp;
-			var coreUISize = 600 * relativeHeight;
-			var coreImageSize = coreUISize / 7 - coreUIoffset * 2;
-			var coreBackgroundSize = coreImageSize / 1.2;
-			var bottomHeight = 40 * relativeHeight;
-			var middleAjust = 1.5 * relativeHeight;
-	
+			var abilityUISize = 220 * relativeHeight;
+			var abilityImageSize = abilityUISize / 3 - abilityUIoffset * 2;
+
+			//Container pos
+			var containerX = this.pos.x*rectHeightRel+canvas.width/2-player.pos.x*rectHeightRel - abilityUISize + (core.actualSize / 2) * rectHeightRel;
+			var containerY = this.pos.y*rectHeightRel+canvas.height/2-player.pos.y*rectHeightRel - abilityUISize - abilityUIoffset;
+
+			//Define the center and bottom of the container
+			var center = this.pos.x*rectHeightRel+canvas.width/2-player.pos.x*rectHeightRel + (core.actualSize / 2) * rectHeightRel;
+			var bottom = this.pos.y*rectHeightRel+canvas.height/2-player.pos.y*rectHeightRel - abilityUISize - abilityUIoffset + abilityUISize;
+
+			//Draw rounded UI container
 			ctx.beginPath();
 			ctx.globalAlpha = 0.3;
 			ctx.fillStyle = 'Black';
-			ctx.fillRect(canvas.width / 2 - coreUISize /2, canvas.height - coreUISize, coreUISize, coreUISize /2);
-			ctx.globalAlpha = 0.5;
-			ctx.fillRect(canvas.width / 2 - coreUISize /2, canvas.height - coreUISize, coreUISize, coreUISize /7);
-			ctx.fillStyle = player.color;
-			ctx.fillRect(canvas.width / 2 - coreUISize /2 + coreUISize - fullWidth - coreUIoffset, canvas.height - coreUISize + coreUISize / 7 / 2 - bottomHeight / 2.6, healthWidth, bottomHeight /1.3);
-			ctx.fillRect(canvas.width / 2 - coreUISize / 2 + coreUIoffset, canvas.height - coreUISize + coreUISize / 2 - coreUIoffset - bottomHeight, coreUISize - coreUIoffset * 2, bottomHeight);
+			fillRoundedRect(containerX, containerY, abilityUISize * 2, abilityUISize, 5);
+			fillRoundedRect(containerX, containerY, abilityUISize * 2, abilityUISize / 3, 5);
+			ctx.closePath();
+
+			//Draw pointer triangle
+			ctx.beginPath();
+			ctx.moveTo(center - 7, bottom);
+			ctx.lineTo(center + 7, bottom);
+			ctx.lineTo(center, bottom + 5);
+			ctx.fill();
+			ctx.closePath();
+
+			//Draw container core image
+			ctx.beginPath();
 			ctx.globalAlpha = 1;
-			ctx.font = "bold 15px Pier";
-	    	ctx.fillStyle = "White";
-	    	ctx.textAlign="left"; 
-	    	ctx.textBaseline="middle"; 
-			ctx.fillText('Upgrade', canvas.width / 2 - coreUISize /2 + coreUIoffset * 2, canvas.height - coreUISize + coreUISize / 2 - coreUIoffset - bottomHeight + bottomHeight /2);
-			ctx.textAlign="right"; 
-			ctx.fillText('Max Level', canvas.width / 2 - coreUISize /2 + coreUIoffset * 2 + coreUISize - coreUIoffset * 4, canvas.height - coreUISize + coreUISize / 2 - coreUIoffset - bottomHeight + bottomHeight /2);
-			ctx.textAlign="left"; 
-			ctx.fillText('Health', canvas.width / 2 - coreUISize /2 + coreUISize - fullWidth, canvas.height - coreUISize + coreUISize / 7 / 2);
-			
-			ctx.globalAlpha = 1;
-			
 			ctx.fillStyle = player.color;
-			ctx.fillRect(canvas.width / 2 - coreUISize / 2 + coreUIoffset + coreUIoffset / 4, canvas.height - coreUISize + coreUIoffset + coreUIoffset / 4, coreImageSize - coreUIoffset / 2, coreImageSize - coreUIoffset / 2);
-			ctx.drawImage(abilityUpgrader, canvas.width / 2 - coreUISize /2 + coreUIoffset, canvas.height - coreUISize + coreUIoffset, coreImageSize, coreImageSize);
-	    	ctx.font = "bold 15px Pier";
+			ctx.fillRect(containerX + abilityUIoffset + abilityUIoffset / 4, containerY + abilityUIoffset + abilityUIoffset / 4, abilityImageSize - abilityUIoffset / 2, abilityImageSize - abilityUIoffset / 2);
+			ctx.drawImage(abilityUpgrader, containerX + abilityUIoffset, containerY + abilityUIoffset, abilityImageSize, abilityImageSize);
+			ctx.closePath();
+
+			//Draw container text
+			ctx.beginPath();
+			ctx.font = "bold " + 15*relativeHeight + "px Pier";
 	    	ctx.fillStyle = "White";
 	    	ctx.textAlign="left";
 	    	ctx.textBaseline="middle";  
-			ctx.fillText('Ability Upgrader', canvas.width / 2 - coreUISize /2 + coreUIoffset * 2 + coreImageSize, canvas.height - coreUISize + coreUIoffset + coreImageSize /3, coreImageSize * 2, coreImageSize * 2);
-			ctx.fillText('Level 1', canvas.width / 2 - coreUISize /2 + coreUIoffset * 2 + coreImageSize, canvas.height - coreUISize + coreUIoffset + coreImageSize /1.45, coreImageSize * 2, coreImageSize * 2);
+			ctx.fillText('Ability Upgrader', containerX + abilityUIoffset * 2 + abilityImageSize, containerY + abilityUIoffset * 2.2);
+			ctx.fillText('Level 1', containerX + abilityUIoffset * 2 + abilityImageSize, containerY + abilityUIoffset * 4);
 			ctx.closePath();
+
+			//Draw upgrade bar
+			ctx.beginPath();
+			ctx.globalAlpha = 0.5;
+			ctx.fillStyle = player.color;
+			ctx.fillRect(containerX + abilityUIoffset, containerY + abilityUISize - abilityUIoffset * 2 - abilityUIoffset * 2, abilityUISize * 2 - abilityUIoffset * 2, abilityUIoffset * 3);
+			ctx.closePath();
+
+			//Draw core upgrade text
+			ctx.beginPath();
+			ctx.globalAlpha = 1;
+			ctx.font = "bold " + 15*relativeHeight + "px Pier";
+	    	ctx.fillStyle = "White";
+	    	ctx.textAlign="left"; 
+	    	ctx.textBaseline="middle"; 
+			ctx.fillText('Speed Ability: Level ' + player.speed, containerX + abilityUIoffset - abilityUIoffset * 1.5 + abilityUIoffset * 2, containerY + abilityUISize - abilityUIoffset * 2 - abilityUIoffset * 2 + abilityUIoffset * 1.5);
+			ctx.textAlign="right"; 
+			ctx.fillText('(Space) ' + '10C/P', containerX + abilityUIoffset - abilityUIoffset * 2 + abilityUISize * 2 - abilityUIoffset * 2, containerY + abilityUISize - abilityUIoffset * 2 - abilityUIoffset * 2 + abilityUIoffset * 1.5);
+			ctx.closePath();
+
+			//Draw health
+			ctx.beginPath();
+			ctx.globalAlpha = 0.5;
+			ctx.fillStyle = player.color;
+			ctx.fillRect(containerX + abilityUISize * 2 - fullWidth - abilityUIoffset, containerY + abilityUIoffset * 2.1, healthWidth, abilityUIoffset * 2);
+			ctx.globalAlpha = 1;
+			ctx.fillStyle = "White";
+			ctx.textAlign="left";
+			ctx.fillText((this.hp).toFixed(0) + '/' + '100', containerX + abilityUISize * 2 - fullWidth, containerY + abilityUIoffset * 2.1 + abilityUIoffset);
+			ctx.closePath();		
 		}
 	}
 }
