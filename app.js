@@ -21,9 +21,15 @@ var io = require('socket.io')(server);
 var tools = require('./tools.js');
 var util = require('util');
 
+// Set app title
+var setTitle = require('console-title');
+setTitle('Core.io Server');
+
 //Create port
-server.listen(3001, function () {
-	console.log('Started an https server on port 3001.');
+let port = 3003;
+server.listen(port, function () {
+	console.log('Started an https server on port', port);
+	console.log('Access the website at core.victorwei.com');
 })
 var public = __dirname + '/public/';
 

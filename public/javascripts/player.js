@@ -797,7 +797,7 @@ class Player {
 
 function interpolateEntities(entities, isProjectiles) {
 	var now = +new Date(); 
-	var serverUpdateRate = 10;
+	var serverUpdateRate = 100;
 	var render_timestamp = now - (1000.0 / serverUpdateRate);
 
 	for (var i in entities) { 
@@ -824,8 +824,8 @@ function interpolateEntities(entities, isProjectiles) {
 	      	var t0 = buffer[0][0];
 	      	var t1 = buffer[1][0];
 
-	      	entity.pos.x = x0 + (x1 - x0) * (render_timestamp - t0) / (t1 - t0);
-	      	entity.pos.y = y0 + (y1 - y0) * (render_timestamp - t0) / (t1 - t0);
+	      	entity.x = x0 + (x1 - x0) * (render_timestamp - t0) / (t1 - t0);
+	      	entity.y = y0 + (y1 - y0) * (render_timestamp - t0) / (t1 - t0);
 	    }
 	}
 }
